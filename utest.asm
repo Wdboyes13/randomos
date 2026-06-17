@@ -3,7 +3,7 @@ global _start
 
 section .text
 _start:
-    mov eax, 4
+    mov eax, 3
     mov ebx, 1
     lea ecx, [rel msg]
     mov edx, 7

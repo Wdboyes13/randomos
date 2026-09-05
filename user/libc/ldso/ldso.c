@@ -243,28 +243,6 @@ HIDDEN void ldso_print_hex(u64 val) {
     ldso_print(buf);
 }
 
-HIDDEN static u64 _ldso_base;
-HIDDEN static Elf64_Auxv* ldso_auxv;
-HIDDEN static u64 __atmmaplow_vaddr = 0;
-HIDDEN static u64 __atmmaphigh_vaddr = 0;
-
-HIDDEN u64 __ldso_getauxval(u64 type) {
-    if (type == AT_MMAPLOW) {
-        return __atmmaplow_vaddr;
-    } else if (type == AT_MMAPHIGH) {
-        return __atmmaphigh_vaddr;
-    } else {
-        Elf64_Auxv* auxv = (Elf64_Auxv*)ldso_auxv;
-        while (auxv->type != AT_NULL) {
-            if (auxv->type == type) {
-                return auxv->val;
-            }
-            auxv++;
-        }
-        return 0;
-    }
-}
-
 HIDDEN void* memset(void* dest, int c, usize n) {
     void* orig = dest;
     u8 val = (u8)c;
@@ -287,6 +265,30 @@ HIDDEN void* memcpy(void* dest, const void* src, usize count) {
         :: "memory"
     );
     return orig;
+}
+
+HIDDEN ASMFUNC int vmm_setflgs(u64 virt, u64 npgs, u64 flags) {
+    asm volatile(
+        "mov $63, %rax\n\t"
+        "syscall\n\t"
+        "ret\n\t"
+    );
+}
+
+HIDDEN usize strlen(const char* str) {
+    if (!str) return 0;
+    usize len = 0;
+    while (str[len]) len++;
+    return len;
+}
+
+HIDDEN s32 streq(const char* s1, const char* s2) {
+    if (!s1 || !s2) return 0;
+    while (*s1 && (*s1 == *s2)) {
+        s1++;
+        s2++;
+    }
+    return (*(const unsigned char*)s1 == *(const unsigned char*)s2);
 }
 
 typedef enum {
@@ -328,6 +330,62 @@ struct ObjectT {
 HIDDEN static object_t objects[MAXOBJS];
 HIDDEN static usize nloaded = 0;
 HIDDEN static u64 lodbase = 0;
+HIDDEN static object_t* exeobj = NULL;
+
+// exe only
+HIDDEN void run_preinits(object_t* obj) {
+    if (obj->state == OBJ_LOADED) {
+        if (obj->preinitarraysz > 0 && obj->preinitarray) {
+            usize n = obj->preinitarraysz / sizeof(*obj->preinitarray);
+            for (usize i = 0; i < n; i++) {
+                if (obj->preinitarray[i]) obj->preinitarray[i]();
+            }
+        }
+    }
+    obj->state = OBJ_PREINITED;
+}
+
+HIDDEN void run_inits(object_t* obj) {
+    if (!obj || obj->state == OBJ_INITED) return;
+
+    for (usize i = 0; i < obj->ndeps; i++) {
+        run_inits(obj->deps[i]);
+    }
+
+    if (obj->state == OBJ_PREINITED || obj->state == OBJ_LOADED) {
+        if (obj->initarraysz > 0 && obj->initarray) {
+            usize n = obj->initarraysz / sizeof(*obj->initarray);
+            for (usize i = 0; i < n; i++) {
+                if (obj->initarray[i]) obj->initarray[i]();
+            }
+        }
+
+        if (obj->init) {
+            obj->init();
+        }
+    }
+    obj->state = OBJ_INITED;
+}
+
+HIDDEN void run_finis(object_t* obj) {
+    if (obj->state == OBJ_INITED) {
+        if (obj->finiarray) {
+            usize n = obj->finiarraysz / sizeof(*obj->finiarray);
+
+            for (usize i = 0; i < n; i++) {
+                obj->finiarray[i]();
+            }
+
+        }
+
+        if (obj->fini) obj->fini();
+        obj->state = OBJ_FINIED;
+    }
+
+    for (usize i = 0; i < obj->ndeps; i++) {
+        run_finis(obj->deps[i]);
+    }
+}
 
 typedef u64 page_table_t;
 #define PML4_IDX(addr) (((addr) >> 39) & 0x1FF)
@@ -336,28 +394,42 @@ typedef u64 page_table_t;
 #define PT_IDX(addr)   (((addr) >> 12) & 0x1FF)
 #define HHDM_START 0xFFFF800000000000
 
-HIDDEN ASMFUNC int vmm_setflgs(u64 virt, u64 npgs, u64 flags) {
-    asm volatile(
-        "mov $63, %rax\n\t"
-        "syscall\n\t"
-        "ret\n\t"
-    );
-}
+HIDDEN static u64 _ldso_base;
+HIDDEN static Elf64_Auxv* ldso_auxv;
+HIDDEN static u64 __atmmaplow_vaddr = 0;
+HIDDEN static u64 __atmmaphigh_vaddr = 0;
 
-HIDDEN usize strlen(const char* str) {
-    if (!str) return 0;
-    usize len = 0;
-    while (str[len]) len++;
-    return len;
-}
-
-HIDDEN s32 streq(const char* s1, const char* s2) {
-    if (!s1 || !s2) return 0;
-    while (*s1 && (*s1 == *s2)) {
-        s1++;
-        s2++;
+HIDDEN u64 __ldso_getauxval(u64 type) {
+    if (type == AT_MMAPLOW) {
+        return __atmmaplow_vaddr;
+    } else if (type == AT_MMAPHIGH) {
+        return __atmmaphigh_vaddr;
+    } else {
+        Elf64_Auxv* auxv = (Elf64_Auxv*)ldso_auxv;
+        while (auxv->type != AT_NULL) {
+            if (auxv->type == type) {
+                return auxv->val;
+            }
+            auxv++;
+        }
+        return 0;
     }
-    return (*(const unsigned char*)s1 == *(const unsigned char*)s2);
+}
+
+HIDDEN void __ldso_ldcleanup() {
+    run_finis(exeobj);
+}
+
+typedef enum {
+    LDSO_GETAUXVAL,
+    LDSO_LDCLEANUP
+} ldso_private_t;
+HIDDEN void* __ldso_getldsoprivate(ldso_private_t fn) {
+    switch (fn) {
+        case LDSO_GETAUXVAL: return __ldso_getauxval;
+        case LDSO_LDCLEANUP: return __ldso_ldcleanup;
+        default: return NULL;
+    }
 }
 
 HIDDEN u64 elf_hash(const char* name) {
@@ -439,8 +511,8 @@ HIDDEN u64 locate_gnuhashsym(object_t* obj, const char* name, usize* sz) {
 }
 
 HIDDEN u64 locate_extern(const char* name, usize* sz) {
-    if (streq(name, "__ldso_getauxval")) {
-        return (u64)__ldso_getauxval;
+    if (streq(name, "__ldso_getldsoprivate")) {
+        return (u64)__ldso_getldsoprivate;
     }
 
     for (usize l = 0; l < nloaded; l++) {
@@ -806,61 +878,6 @@ HIDDEN object_t* load_library(const char* path, usize lodbase, usize* ldsz) {
     return parse_object(lodbase, dynbase, path);
 }
 
-// exe only
-HIDDEN void run_preinits(object_t* obj) {
-    if (obj->state == OBJ_LOADED) {
-        if (obj->preinitarraysz > 0 && obj->preinitarray) {
-            usize n = obj->preinitarraysz / sizeof(*obj->preinitarray);
-            for (usize i = 0; i < n; i++) {
-                if (obj->preinitarray[i]) obj->preinitarray[i]();
-            }
-        }
-    }
-    obj->state = OBJ_PREINITED;
-}
-
-HIDDEN void run_inits(object_t* obj) {
-    if (!obj || obj->state == OBJ_INITED) return;
-
-    for (usize i = 0; i < obj->ndeps; i++) {
-        run_inits(obj->deps[i]);
-    }
-
-    if (obj->state == OBJ_PREINITED || obj->state == OBJ_LOADED) {
-        if (obj->initarraysz > 0 && obj->initarray) {
-            usize n = obj->initarraysz / sizeof(*obj->initarray);
-            for (usize i = 0; i < n; i++) {
-                if (obj->initarray[i]) obj->initarray[i]();
-            }
-        }
-
-        if (obj->init) {
-            obj->init();
-        }
-    }
-    obj->state = OBJ_INITED;
-}
-
-HIDDEN void run_finis(object_t* obj) {
-    if (obj->state == OBJ_INITED) {
-        if (obj->finiarray) {
-            usize n = obj->finiarraysz / sizeof(*obj->finiarray);
-
-            for (usize i = 0; i < n; i++) {
-                obj->finiarray[i]();
-            }
-
-        }
-
-        if (obj->fini) obj->fini();
-        obj->state = OBJ_FINIED;
-    }
-
-    for (usize i = 0; i < obj->ndeps; i++) {
-        run_finis(obj->deps[i]);
-    }
-}
-
 HIDDEN void ldso_main(u64 ldso_base, u64 argc, char** argv, char** envp, Elf64_Auxv* auxv) {
     ldso_auxv = auxv;
     _ldso_base = ldso_base;
@@ -927,6 +944,5 @@ HIDDEN void ldso_main(u64 ldso_base, u64 argc, char** argv, char** envp, Elf64_A
 
     int ret = ((int (*)(int argc, char** argv, char** envp))entry)(argc, argv, envp);
 
-    run_finis(exeobj);
     ldso_exit(ret);
 }

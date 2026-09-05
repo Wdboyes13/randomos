@@ -1,6 +1,9 @@
 #pragma once
 #include <sys/types.h>
 
+#define PATH_MAX 1024
+#define FILENAME_MAX 256
+
 #define O_WRONLY 0x02
 #define O_RDONLY 0x01
 #define O_RDWR (O_WRONLY | O_RDONLY)

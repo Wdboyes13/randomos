@@ -8,6 +8,12 @@
 #include <env.h>
 #include <bcrypt.h>
 
+uint64_t rdtsc(void) {
+    u32 low, high;
+    asm volatile("rdtsc" : "=a"(low), "=d"(high));
+    return ((uint64_t)high << 32) | low;
+}
+
 struct passwd {
     char* uname;
     char* passwd;
@@ -160,7 +166,11 @@ int _ps_hx2bin(const char* str, u8* out, usize nbytes) {
 }
 
 int verify_passwd(const char* entered, const char* stored) {
-    return bcrypt_checkpw(entered, stored);
+    u64 st = rdtsc();
+    int ret = bcrypt_checkpw(entered, stored);
+    u64 ed = rdtsc();
+    serial_printf("Password check took %lu ticks\n", ed - st);
+    return ret;
 }
 
 void ensure_home(char* home) {

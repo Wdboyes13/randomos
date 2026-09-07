@@ -130,6 +130,13 @@ enum {
     VIRTIO_SND_PCM_FMT_IEC958_SUBFRAME /* 32 / 32 bits */
 };
 
+#define VIRTSND_ENC_ISUNSUP(ENC) \
+    (ENC == VIRTIO_SND_PCM_FMT_IMA_ADPCM || \
+     VIRTIO_SND_PCM_FMT_DSD_U8 || \
+     VIRTIO_SND_PCM_FMT_DSD_U16 || \
+     VIRTIO_SND_PCM_FMT_DSD_U32 || \
+     VIRTIO_SND_PCM_FMT_IEC958_SUBFRAME)
+
 /* supported PCM frame rates */
 enum {
     VIRTIO_SND_PCM_RATE_5512 = 0,

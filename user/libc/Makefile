@@ -1,14 +1,14 @@
 include ../../mk/tools.mk
 
 ASFLAGS := -felf64
-CCFLAGS := -m64 -nostdlib \
+CFLAGS := -m64 -nostdlib \
 	-fno-builtin -Iinclude -nodefaultlibs \
     -ffreestanding -Wall -Wextra -g \
 	-MMD -MP -mno-mmx -mno-sse -mno-sse2 \
 	-mno-red-zone -msoft-float -mno-fp-ret-in-387 \
-	-Werror 
+	-Werror
 
-CCFLAGS_SO := $(CCFLAGS) -fPIC
+CFLAGS_SO := $(CFLAGS) -fPIC
 LDFLAGS_SO := -shared -Wl,-soname,/lib/libc.so -Wl,-shared -m64 -nostdlib -ffreestanding -nostartfiles \
 			  -Wl,--allow-shlib-undefined -Wl,--hash-style=both
 
@@ -44,7 +44,7 @@ DEPS := $(LIBSRC:.c=.d)
 
 ALL_LIB_OBJS := $(LIBOBJ) $(ASMOBJ)
 ALL_SOFILE_OBJS := $(LIB_SOOBJ) $(ASM_SOOBJ)
-
+$(info libc objects $(ALL_LIB_OBJS))
 CRTSRC := src/crt.asm
 
 all: $(LIBC) $(CRT) $(LIBC_SO) copy
@@ -73,11 +73,14 @@ $(CRT): $(CRTSRC)
 	$(AS) $(ASFLAGS) $< -o $@
 
 %.so.o: %.c
-	$(CC) $(CCFLAGS_SO) -c $< -o $@
+	$(CC) $(CFLAGS_SO) -c $< -o $@
 %.so.o: %.asm
 	$(AS) $(ASFLAGS) $< -o $@
+
+src/bcrypt/%.o: src/bcrypt/%.c
+	$(CC) $(CFLAGS) -O2 -c $< -o $@
 %.o: %.c
-	$(CC) $(CCFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 %.o: %.asm
 	$(AS) $(ASFLAGS) $< -o $@
 clean:

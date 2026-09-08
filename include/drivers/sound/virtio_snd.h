@@ -238,7 +238,13 @@ struct __packed virtio_snd_chmap_info {
     u8 positions[VIRTIO_SND_CHMAP_MAX_SIZE];
 };
 
+#define VIRTSND_N_EVTBUFS 16ULL
+typedef struct {
+    u64 phys;
+    int dsc;
+} virtio_snd_evtbuf_t;
 typedef struct {
     virtio_dev_t dev;
     virtqueue_t queues[4];
+    virtio_snd_evtbuf_t evtbufs[16];
 } virtio_snd_dev_t;

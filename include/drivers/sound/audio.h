@@ -55,15 +55,15 @@ typedef struct {
 } audio_jack_t;
 
 typedef struct {
-    u32 id;
-    u64 samples;
+    u32 id; // id of stream
+    u64 samples; // bitmask of supported sample rates
     enum {
         SND_STREAM_IN,
         SND_STREAM_OUT
     } dir;
-    u32 chmin;
-    u32 chmax;
-    u64 fmts;
+    u32 chmin; // minimum channels
+    u32 chmax; // max channels
+    u64 fmts; // bitmask of supported formats
     audio_dev_t* dev;
     void* priv;
 } audio_stream_t;
@@ -72,13 +72,16 @@ typedef struct {
 // soon we should have some sort of callback system for when the
 // device needs more data
 typedef struct {
-    int (*get_jacks)(audio_jack_t* jacks, usize n, usize start_id); // gets n audio jacks starting at id start_id
-    int (*get_streams)(audio_stream_t* streams, usize n, usize start_id); // gets n streams starting at id start_id
-    int (*prepare)(audio_stream_t* stream, u32 bytes, u8 channels, u8 fmt, u8 rate); // configures and prepares a device for playback
-    int (*start)(audio_stream_t* stream); // starts playback on the stream
-    int (*submit_buffer)(audio_stream_t* stream, void* data, usize sz); // submits a buffer to the device
-    int (*stop)(audio_stream_t* stream); // stops playback on the stream
+    int (*close)(audio_dev_t* self);
+    ssize (*get_jacks)(audio_dev_t* dev, audio_jack_t* jacks, usize n, usize start_id); // gets n audio jacks starting at id start_id
+    ssize (*get_streams)(audio_dev_t* dev, audio_stream_t* streams, usize n, usize start_id); // gets n streams starting at id start_id
+    int (*prepare)(audio_dev_t* dev, audio_stream_t* stream, u32 bytes, u8 channels, u8 fmt, u8 rate); // configures and prepares a device for playback
+    int (*start)(audio_dev_t* dev, audio_stream_t* stream); // starts playback on the stream
+    ssize (*submit_buffer)(audio_dev_t* dev, audio_stream_t* stream, void* data, usize sz); // submits a buffer to the device
+    int (*stop)(audio_dev_t* dev, audio_stream_t* stream); // stops playback on the stream
 } audio_ops_t;
+
+int open_audio(audio_dev_t* dev);
 
 struct AudioDeviceType {
     usize njacks;

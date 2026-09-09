@@ -64,7 +64,7 @@ FILE* fopen(const char* path, const char* mode) {
     }
 
     f->buf = malloc(FILE_BUFSZ);
-    if (!f) {
+    if (!f->buf) {
         close(fd);
         free(f);
         return NULL;
@@ -309,14 +309,14 @@ void __libc_setupfail();
 
 #include <io.h>
 void __libc_init_stdioptr(FILE** ptr, int fd, int fflags) {
-    *ptr = malloc(sizeof(FILE*));
+    *ptr = malloc(sizeof(**ptr));
     if (!*ptr) __libc_setupfail();
     (*ptr)->buf = malloc(FILE_BUFSZ);
     if (!(*ptr)->buf) {
         free(*ptr);
         __libc_setupfail();
     }
-    serial_printf("got buffer %p for fd %d\n", (*ptr)->buf);
+    serial_printf("got buffer %p for fd %d\n", (*ptr)->buf, fd);
 
     (*ptr)->fd = fd;
     (*ptr)->bufsz = FILE_BUFSZ; 
@@ -338,9 +338,7 @@ void __libc_initstdio() {
 }
 
 void __libc_finistdio() {
-    // this is broken for now, but kernel cleans up all process
-    //     memory on exit, so it doesn't really matter
-    //__libc_fini_stdioptr(&__libc_stdout__);
-    //__libc_fini_stdioptr(&__libc_stderr__);
-    //__libc_fini_stdioptr(&__libc_stdin__);
+    __libc_fini_stdioptr(&__libc_stdout__);
+    __libc_fini_stdioptr(&__libc_stderr__);
+    __libc_fini_stdioptr(&__libc_stdin__);
 }

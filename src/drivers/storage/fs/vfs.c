@@ -801,6 +801,7 @@ int open(const char* path, int flags, u16 mode) {
                 closefd(ninfo->fd);
                 return ret;
             }
+            ninfo->data.file.inod.size = 0;
         }
 
         return ninfo->fd;
@@ -834,7 +835,9 @@ ssize fswrite(int fd, void* buf, usize sz) {
     if (nwritten< 0) {
         return nwritten;
     } else {
-        info->data.file.pos += nwritten;
+        info->data.file.pos += (usize)nwritten;
+        if (info->data.file.pos > info->data.file.inod.size)
+            info->data.file.inod.size = info->data.file.pos;
         return nwritten;
     }
 }
@@ -847,22 +850,35 @@ off_t lseek(int fd, off_t off, int whence) {
     if (fdinfo->type != FDTYPE_FILE) return -EBADF;
     struct file* ent = &fdinfo->data.file;
 
+    /* refresh cached size; another fd may have grown the file */
+    vinode_t cur;
+    if (ent->mnt->ops->getino(ent->mnt, ent->ino, &cur) == 0) {
+        ent->inod.size = cur.size;
+        ent->inod.mode = cur.mode;
+    }
+
+    s64 size = (s64)ent->inod.size;
+    s64 pos = (s64)ent->pos;
+    s64 npos;
+
     if (whence == SEEK_SET) {
-        if ((u64)off > ent->inod.size) return -ERANGE;
-        ent->pos = off;
-        return ent->pos;
+        if (off < 0) return -EINVAL;
+        npos = off;
     } else if (whence == SEEK_CUR) {
-        if (ent->pos + off > ent->inod.size) return -ERANGE;
-        ent->pos += off;
-        return ent->pos;
+        /* careful: pos is unsigned, off may be negative */
+        if (off < 0 && pos + off < 0) return -EINVAL;
+        if (off > 0 && pos > (s64)((u64)0x7FFFFFFFFFFFFFFFULL - (u64)off)) return -ERANGE;
+        npos = pos + off;
     } else if (whence == SEEK_END) {
-        if (off > 0) return -ERANGE;
-        if (ent->inod.size + off < 0) return -ERANGE;
-        ent->pos = ent->inod.size + off;
-        return ent->pos;
+        if (off < 0 && size + off < 0) return -EINVAL;
+        if (off > 0 && size > (s64)((u64)0x7FFFFFFFFFFFFFFFULL - (u64)off)) return -ERANGE;
+        npos = size + off;
     } else {
         return -EINVAL;
     }
+
+    ent->pos = (usize)npos;
+    return (off_t)npos;
 }
 
 int trunc(int fd) {
@@ -874,7 +890,10 @@ int trunc(int fd) {
     if (fdinfo->type != FDTYPE_FILE) return -EBADF;
     struct file* ent = &fdinfo->data.file;
 
-    return ent->mnt->ops->trunc(ent->mnt, ent->ino);
+    if ((ret = ent->mnt->ops->trunc(ent->mnt, ent->ino)) < 0) return ret;
+    ent->inod.size = 0;
+    if (ent->pos > 0) ent->pos = 0;
+    return 0;
 }
 
 int sync(int fd) {

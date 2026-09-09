@@ -32,6 +32,19 @@ static int wrblk(vfs_t* vfs, u32 blk, const u8* in) {
     return 0;
 }
 
+/* freshly allocated blocks must read back as zeros, otherwise indirect
+ * block scans treat garbage as allocated entries and data blocks leak
+ * old contents into files */
+static int zero_newblk(vfs_t* vfs, u32 blk) {
+    ext2fs_t* fs = EXT2FS(vfs);
+    u8* zb = malloc(fs->blocksz);
+    if (!zb) return -ENOMEM;
+    memset(zb, 0, fs->blocksz);
+    int ret = wrblk(vfs, blk, zb);
+    free(zb);
+    return ret;
+}
+
 static usize inosz(vfs_t* vfs) {
     ext2fs_t* fs = EXT2FS(vfs);
     if (fs->isdyn) return fs->sb.s_inode_size;
@@ -374,6 +387,9 @@ static ssize ino_allocblk(vfs_t* vfs, u32 ino, ext2_ino_t* inod) {
         inod->i_block[12] = blk;
         inod->i_blocks += spb;
         if ((ret = flush_inode(vfs, ino, inod)) < 0) return ret;
+        /* a fresh indirect block must read as all-zero or the
+         * scan below will treat garbage as allocated entries */
+        if ((ret = zero_newblk(vfs, blk)) < 0) return ret;
     }
 
     if ((ret = read_indr(vfs, inod->i_block[12], indrs[0])) < 0) return ret;
@@ -381,7 +397,7 @@ static ssize ino_allocblk(vfs_t* vfs, u32 ino, ext2_ino_t* inod) {
         if (indrs[0][i] == 0) {
             ssize blk = allocblk(vfs, inobg);
             if (blk < 0) return blk;
-            indrs[0][i] = ret;
+            indrs[0][i] = (u32)blk;
             inod->i_blocks += spb;
             if ((ret = wrblk(vfs, inod->i_block[12], (u8*)indrs[0])) < 0) return ret;
             if ((ret = flush_inode(vfs, ino, inod)) < 0) return ret;
@@ -395,6 +411,7 @@ static ssize ino_allocblk(vfs_t* vfs, u32 ino, ext2_ino_t* inod) {
         inod->i_block[13] = blk;
         inod->i_blocks += spb;
         if ((ret = flush_inode(vfs, ino, inod)) < 0) return ret;
+        if ((ret = zero_newblk(vfs, blk)) < 0) return ret;
     }
 
     if ((ret = read_indr(vfs, inod->i_block[13], indrs[0])) < 0) return ret;
@@ -406,6 +423,7 @@ static ssize ino_allocblk(vfs_t* vfs, u32 ino, ext2_ino_t* inod) {
             inod->i_blocks += spb;
             if ((ret = wrblk(vfs, inod->i_block[13], (u8*)indrs[0])) < 0) return ret;
             if ((ret = flush_inode(vfs, ino, inod)) < 0) return ret;
+            if ((ret = zero_newblk(vfs, blk)) < 0) return ret;
         }
 
         if ((ret = read_indr(vfs, indrs[0][i], indrs[1])) < 0) return ret;
@@ -428,6 +446,7 @@ static ssize ino_allocblk(vfs_t* vfs, u32 ino, ext2_ino_t* inod) {
         inod->i_block[14] = blk;
         inod->i_blocks += spb;
         if ((ret = flush_inode(vfs, ino, inod)) < 0) return ret;
+        if ((ret = zero_newblk(vfs, blk)) < 0) return ret;
     }
 
     if ((ret = read_indr(vfs, inod->i_block[14], indrs[0])) < 0) return ret;
@@ -439,6 +458,7 @@ static ssize ino_allocblk(vfs_t* vfs, u32 ino, ext2_ino_t* inod) {
             inod->i_blocks += spb;
             if ((ret = wrblk(vfs, inod->i_block[14], (u8*)indrs[0])) < 0) return ret;
             if ((ret = flush_inode(vfs, ino, inod)) < 0) return ret;
+            if ((ret = zero_newblk(vfs, blk)) < 0) return ret;
         }
 
         if ((ret = read_indr(vfs, indrs[0][i], indrs[1])) < 0) return ret;
@@ -448,8 +468,9 @@ static ssize ino_allocblk(vfs_t* vfs, u32 ino, ext2_ino_t* inod) {
                 if (blk < 0) return blk;
                 indrs[1][j] = blk;
                 inod->i_blocks += spb;
-                if ((ret = wrblk(vfs, indrs[0][j], (u8*)indrs[1])) < 0) return ret;
+                if ((ret = wrblk(vfs, indrs[0][i], (u8*)indrs[1])) < 0) return ret;
                 if ((ret = flush_inode(vfs, ino, inod)) < 0) return ret;
+                if ((ret = zero_newblk(vfs, blk)) < 0) return ret;
             }
 
             if ((ret = read_indr(vfs, indrs[1][j], indrs[2])) < 0) return ret;
@@ -861,7 +882,7 @@ ssize ext2fs_rmlink(vfs_t* vfs, u32 dino, const char* name) {
     usize nblks = (getisize(vfs, &dinod) + fs->blocksz - 1) / fs->blocksz;
     for (usize b = 0; b < nblks; b++) {
         ssize blk = ino_getblkid(vfs, &dinod, b);
-        if (blk < 0) return blk;
+        if (blk <= 0) return blk == 0 ? -EINVAL : (int)blk;
 
         u8 blkd[fs->blocksz];
         if (rdblk(vfs, blk, blkd) < 0) return -1;
@@ -929,13 +950,13 @@ ssize ext2fs_mklink(vfs_t* vfs, u32 ino, u16 mode, u32 dino, const char* name) {
     usize nblks = (getisize(vfs, &parinod) + fs->blocksz - 1) / fs->blocksz;
     for (usize b = 0; b < nblks; b++) {
         ssize blk = ino_getblkid(vfs, &parinod, b);
-        if (blk < 0) return blk;
+        if (blk <= 0) return blk == 0 ? -EINVAL : (int)blk;
 
         u8 blkd[fs->blocksz];
         if ((ret = rdblk(vfs, blk, blkd)) < 0) return ret;
         for (usize i = 0; i < fs->blocksz;) {
             ext2_dir1_t* ent = (ext2_dir1_t*)&blkd[i];
-            if (ent->rec_len < 8 || i + ent->rec_len > 1024) return -EINVAL;
+            if (ent->rec_len < 8 || i + ent->rec_len > fs->blocksz) return -EINVAL;
             usize oldsz = EXT2_DIR_RECLEN(ent->name_len);
 
             if (ent->inode == 0) {
@@ -1001,10 +1022,19 @@ ssize ext2fs_read(vfs_t* vfs, u32 ino, usize off, usize nb, void* buf) {
     while (nread < nb) {
         usize pos = off + nread;
         usize blk = pos / fs->blocksz;
-        usize off = pos % fs->blocksz;
+        usize blkoff = pos % fs->blocksz;
 
         ssize blkid = ino_getblkid(vfs, &inod, blk);
         if (blkid < 0) return nread;
+
+        usize n = fs->blocksz - blkoff;
+        if (n > nb - nread) n = nb - nread;
+        if (blkid == 0) {
+            /* hole reads as zeros */
+            memset((u8*)buf + nread, 0, n);
+            nread += n;
+            continue;
+        }
 
         u8* blkd = malloc(fs->blocksz);
         if (!blkd) return -ENOMEM;
@@ -1013,58 +1043,74 @@ ssize ext2fs_read(vfs_t* vfs, u32 ino, usize off, usize nb, void* buf) {
             return ret;
         }
 
-        usize n = fs->blocksz - off;
-        if (n > nb - nread) n = nb - nread;
-        memcpy((u8*)buf + nread, blkd + off, n);
+        memcpy((u8*)buf + nread, blkd + blkoff, n);
         nread += n;
         free(blkd);
     }
     return nread;
 }
 
-ssize ext2fs_write(vfs_t* vfs, u32 ino, usize off, usize nb, void* buf) {
+ssize ext2fs_write(vfs_t* vfs, u32 ino, usize file_off, usize nb, void* buf) {
     ext2fs_t* fs = EXT2FS(vfs);
     int ret = 0;
 
     ext2_ino_t inod;
     if ((ret = getino(vfs, ino, &inod)) < 0) return ret;
 
+    u64 old_size = getisize(vfs, &inod);
+
     usize nwritten = 0;
+    int werr = 0;
     while (nwritten < nb) {
-        usize pos = off + nwritten;
+        usize pos = file_off + nwritten;
         usize blk = pos / fs->blocksz;
-        usize off = pos % fs->blocksz;
+        usize blkoff = pos % fs->blocksz;
 
         ssize blkid = ino_getblkid(vfs, &inod, blk);
-        if (blkid < 0) {
-            if ((blkid = ino_allocblk(vfs, ino, &inod)) < 0) {
-                inod.i_size += nwritten;
-                if ((ret = flush_inode(vfs, ino, &inod)) < 0) return ret;
-                return nwritten;
+        int is_new = 0;
+        if (blkid == 0) {
+            /* 0 means unallocated hole, not an error */
+            ssize nbk = ino_allocblk(vfs, ino, &inod);
+            if (nbk < 0) {
+                werr = (int)nbk;
+                break;
             }
+            blkid = nbk;
+            is_new = 1;
+        } else if (blkid < 0) {
+            werr = (int)blkid;
+            break;
         }
 
         u8 blkd[fs->blocksz];
-        if ((ret = rdblk(vfs, blkid, blkd)) < 0) {
-            inod.i_size += nwritten;
-            if ((ret = flush_inode(vfs, ino, &inod)) < 0) return ret;
-            return ret;
+        if (is_new) {
+            memset(blkd, 0, fs->blocksz);
+        } else if ((ret = rdblk(vfs, blkid, blkd)) < 0) {
+            werr = ret;
+            break;
         }
 
-        usize n = fs->blocksz - off;
+        usize n = fs->blocksz - blkoff;
         if (n > nb - nwritten) n = nb - nwritten;
-        memcpy(blkd + off, (u8*)buf + nwritten, n);
+        memcpy(blkd + blkoff, (u8*)buf + nwritten, n);
         if ((ret = wrblk(vfs, blkid, blkd)) < 0) {
-            inod.i_size += nwritten;
-                if ((ret = flush_inode(vfs, ino, &inod)) < 0) return ret;
-            return ret;
+            werr = ret;
+            break;
         }
 
         nwritten += n;
     }
 
-    inod.i_size += nwritten;
+    u64 end = (u64)file_off + (u64)nwritten;
+    u64 new_size = end > old_size ? end : old_size;
+    inod.i_size = (u32)(new_size & 0xFFFFFFFFULL);
+    if (fs->isdyn && (fs->sb.s_feature_ro_compat & EXT2_FEATURE_RO_COMPAT_LARGE_FILE)) {
+        if (S_TYPE(inod.i_mode) != S_IFDIR) {
+            inod.i_dir_acl = (u32)((new_size >> 32) & 0xFFFFFFFFULL);
+        }
+    }
     if ((ret = flush_inode(vfs, ino, &inod)) < 0) return ret;
+    if (nwritten == 0 && nb != 0 && werr < 0) return werr;
     return nwritten;
 }
 
@@ -1080,11 +1126,11 @@ ssize ext2fs_readdir(vfs_t* vfs, u32 dino, u64* prv, char* name, usize namlen, v
 
     for (usize b = 0; b < nblks; b++) {
         ssize blk = ino_getblkid(vfs, &inod, b);
-        if (blk < 0) return blk;
+        if (blk <= 0) return blk == 0 ? -EINVAL : (int)blk;
 
         u8 blkd[fs->blocksz];
         if ((ret = rdblk(vfs, blk, blkd)) < 0) return ret;
-        for (usize i = 0; i < 1024;) {
+        for (usize i = 0; i < fs->blocksz;) {
             ext2_dir1_t* dir = (ext2_dir1_t*)&blkd[i];
             if (dir->rec_len < 8 || i + dir->rec_len > fs->blocksz) return -EINVAL;
 
@@ -1183,6 +1229,12 @@ ssize ext2fs_trunc(vfs_t* vfs, u32 ino) {
     for (usize i = 0; i < nblks; i++) {
         if ((ret = ino_freeblk(vfs, ino, &inod, i)) < 0) return ret;
     }
+
+    /* re-read; ino_freeblk flushes after each block */
+    if ((ret = getino(vfs, ino, &inod)) < 0) return ret;
+    inod.i_size = 0;
+    inod.i_dir_acl = 0;
+    if ((ret = flush_inode(vfs, ino, &inod)) < 0) return ret;
 
     return 0;
 }

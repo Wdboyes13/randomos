@@ -23,7 +23,7 @@ int chdir(char* path) {
 }
 
 off_t lseek(int fd, off_t off, u32 whence) {
-    return (off_t)__syscall3(SYS_LSEEK, (u32)fd, (u32)off, whence);
+    return (off_t)__syscall3(SYS_LSEEK, (u64)(u32)fd, (u64)off, (u64)whence);
 }
 
 int rename(char* oldname, char* newname) {

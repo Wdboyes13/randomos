@@ -1,0 +1,6 @@
+1. Merge Sections
+2. Update addresses
+3. Process relocations
+4. Create phdrs
+5. Create ehdr
+6. emit final binary

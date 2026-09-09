@@ -558,3 +558,26 @@ int vmm_setflgs(page_table_t* pml4v, u64 svirt, usize npgs, u64 flgs) {
 
     return 0;
 }
+
+int vmm_getflgs(page_table_t* pml4v, u64 virt, u64* flgs) {
+    if (!pml4v) return -ENOEXIST;
+    virt = virt & ~0xFFFULL;
+
+    u64 pml4e = pml4v[PML4_IDX(virt)];
+    if (!(pml4e & PAGE_PRESENT)) return -ENOEXIST;
+    page_table_t* pdpt_virt = (page_table_t*)(HHDM_START + (pml4e & ~0xFFFULL));
+
+    u64 pdpte = pdpt_virt[PDPT_IDX(virt)];
+    if (!(pdpte & PAGE_PRESENT)) return -ENOEXIST;
+    page_table_t* pd_virt = (page_table_t*)(HHDM_START + (pdpte & ~0xFFFULL));
+
+    u64 pde = pd_virt[PD_IDX(virt)];
+    if (!(pde & PAGE_PRESENT)) return -ENOEXIST;
+    page_table_t* pt_virt = (page_table_t*)(HHDM_START + (pde & ~0xFFFULL));
+
+    u64 pte = pt_virt[PT_IDX(virt)];
+    if (!(pte & PAGE_PRESENT)) return -ENOEXIST;
+    *flgs = pt_virt[PT_IDX(virt)] & 0xfff;
+
+    return 0;
+}

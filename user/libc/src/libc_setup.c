@@ -46,9 +46,13 @@ int _libc_setup(int argc, char** argv, char** envp) {
 
     int ret = main(argc, argv);
 
+    serial_printf("running atexits\n");
     __libc_finiatexit();
+    serial_printf("cleaning stdio\n");
     __libc_finistdio();
+    serial_printf("freeing environ\n");
     __libc_finienviron();
+    serial_printf("libc cleanup finished\n");
     __ldso_ldcleanup();
 
     __syscall1(SYS_EXIT, ret);

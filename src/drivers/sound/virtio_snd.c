@@ -16,6 +16,7 @@ struct snd_query_buffer {
     int desc0;
     int desc1;
     void* data;
+    u64 qbuf;
     usize size;
     usize npgs;
 };
@@ -24,6 +25,7 @@ static int vsnd_query_free(struct snd_query_buffer* buf) {
     virtqueue_free_desc(&buf->dev->queues[VIRTSND_CONTROLQ], buf->desc0);
     virtqueue_free_desc(&buf->dev->queues[VIRTSND_CONTROLQ], buf->desc1);
     vmm_unmap_pages(vmm_cpml4v(), (u64)buf->data, buf->npgs, 0);
+    vmm_unmap_pages(vmm_cpml4v(), (u64)buf->qbuf, 1, 0);
     return 0;
 }
 
@@ -35,21 +37,30 @@ static int vsnd_query(virtio_snd_dev_t* dev, u32 code, u32 sid, u32 n, usize ite
 
     if (d0 < 0 || d1 < 0) return -ENOMEM;
 
-    usize npgs = (VSND_QUERYSZ(n, itemsz) + 4095) &~ 4095;
-    void* vbuf = vmm_map_pages(vmm_cpml4v(), 0, 0, npgs, MAP_CONT | MAP_ANYPHYS | MAP_ANYVIRT | MAP_CONT);
+    usize size = VSND_QUERYSZ(n, itemsz);
+    usize npgs = (size + 4095) / 4096;
+    void* vbuf = vmm_map_pages(vmm_cpml4v(), 0, 0, npgs, MAP_CONT | MAP_ANYPHYS | MAP_ANYVIRT | PAGE_WRITE);
     if (!vbuf) {
         virtqueue_free_desc(&dev->queues[VIRTSND_CONTROLQ], d0);
         virtqueue_free_desc(&dev->queues[VIRTSND_CONTROLQ], d1);
         return -ENOMEM;
     }
 
-    dev->queues[VIRTSND_CONTROLQ].desc[d0].addr = HHDM_START + vmm_get_phys(vmm_cpml4v(), (u64)&query);
+    void* querybuf = vmm_map_pages(vmm_cpml4v(), 0, 0, 1, MAP_ANYPHYS | MAP_ANYVIRT | MAP_CONT | PAGE_WRITE);
+    if (!querybuf) {
+        virtqueue_free_desc(&dev->queues[VIRTSND_CONTROLQ], d0);
+        virtqueue_free_desc(&dev->queues[VIRTSND_CONTROLQ], d1);
+        return -ENOMEM;
+    }
+    memcpy(querybuf, &query, sizeof(query));
+
+    dev->queues[VIRTSND_CONTROLQ].desc[d0].addr = vmm_get_phys(vmm_cpml4v(), (u64)querybuf);
     dev->queues[VIRTSND_CONTROLQ].desc[d0].len = sizeof(query);
     dev->queues[VIRTSND_CONTROLQ].desc[d0].flags = VRING_DESC_F_NEXT;
     dev->queues[VIRTSND_CONTROLQ].desc[d0].next = d1;
 
-    dev->queues[VIRTSND_CONTROLQ].desc[d1].addr =  HHDM_START + vmm_get_phys(vmm_cpml4v(), (u64)vbuf);
-    dev->queues[VIRTSND_CONTROLQ].desc[d1].len = npgs * 4096;
+    dev->queues[VIRTSND_CONTROLQ].desc[d1].addr = vmm_get_phys(vmm_cpml4v(), (u64)vbuf);
+    dev->queues[VIRTSND_CONTROLQ].desc[d1].len = size;
     dev->queues[VIRTSND_CONTROLQ].desc[d1].flags = VRING_DESC_F_WRITE;
 
     virtqueue_submit_chain(&dev->queues[VIRTSND_CONTROLQ], d0);
@@ -61,6 +72,7 @@ static int vsnd_query(virtio_snd_dev_t* dev, u32 code, u32 sid, u32 n, usize ite
         virtqueue_free_desc(&dev->queues[VIRTSND_CONTROLQ], d0);
         virtqueue_free_desc(&dev->queues[VIRTSND_CONTROLQ], d1);
         vmm_unmap_pages(vmm_cpml4v(), (u64)vbuf, npgs, 0);
+        vmm_unmap_pages(vmm_cpml4v(), (u64)querybuf, 1, 0);
         return used;
     }
 
@@ -70,6 +82,7 @@ static int vsnd_query(virtio_snd_dev_t* dev, u32 code, u32 sid, u32 n, usize ite
     buf->desc1 = d1;
     buf->npgs = npgs;
     buf->size = VSND_QUERYSZ(n, itemsz);
+    buf->qbuf = (u64)querybuf;
     return 0;
 }
 
@@ -99,7 +112,7 @@ static u64 vsnd_fmtconv(u64 fmt) {
     return v;
 }
 
-#define CONV_SMP(N) { if (smp & VIRTIO_SND_PCM_RATE_##N) smp |= PCM_RATE_##N; }
+#define CONV_SMP(N) { if (smp & VIRTIO_SND_PCM_RATE_##N) v |= PCM_RATE_##N; }
 static u64 vsnd_smpconv(u64 smp) {
     u64 v = 0;
     CONV_SMP(5512);
@@ -149,7 +162,7 @@ ssize vsnd_get_jacks(audio_dev_t* dev, audio_jack_t* jacks, usize n, usize start
 
     for (usize i = 0; i < n; i++) {
         jacks->conn = data->info[i].connected;
-        jacks->id = i;
+        jacks->id = start_id + i;
         jacks->dev = dev;
         jacks->priv = 0;
     }
@@ -160,7 +173,7 @@ ssize vsnd_get_jacks(audio_dev_t* dev, audio_jack_t* jacks, usize n, usize start
 
 ssize vsnd_get_streams(audio_dev_t* dev, audio_stream_t* streams, usize n, usize start_id) {
     virtio_snd_dev_t* sdev = dev->priv;
-    if (start_id + n > dev->njacks) n = dev->njacks - start_id;
+    if (start_id + n > dev->nstreams) n = dev->nstreams - start_id;
 
     struct snd_query_buffer buf;
     int ret = vsnd_query(sdev, VIRTIO_SND_R_PCM_INFO, start_id, n,
@@ -173,14 +186,14 @@ ssize vsnd_get_streams(audio_dev_t* dev, audio_stream_t* streams, usize n, usize
     } *data = buf.data;
 
     for (usize i = 0; i < n; i++) {
-        streams->chmax = data->info[i].channels_max;
-        streams->chmin = data->info[i].channels_min;
-        streams->dir = data->info[i].direction == VIRTIO_SND_D_INPUT ? SND_STREAM_IN : SND_STREAM_OUT;
-        streams->dev = dev;
-        streams->id = i;
-        streams->priv = 0;
-        streams->fmts = vsnd_fmtconv(data->info[i].formats);
-        streams->samples = vsnd_smpconv(data->info[i].rates);
+        streams[i].chmax = data->info[i].channels_max;
+        streams[i].chmin = data->info[i].channels_min;
+        streams[i].dir = data->info[i].direction == VIRTIO_SND_D_INPUT ? SND_STREAM_IN : SND_STREAM_OUT;
+        streams[i].dev = dev;
+        streams[i].id = i;
+        streams[i].priv = 0;
+        streams[i].fmts = vsnd_fmtconv(data->info[i].formats);
+        streams[i].samples = vsnd_smpconv(data->info[i].rates);
     }
 
     vsnd_query_free(&buf);
@@ -209,11 +222,15 @@ int vsnd_stop(audio_dev_t* dev, audio_stream_t* stream) {
 
 int virtio_snd_open(audio_dev_t* adev) {
     adev->priv = malloc(sizeof(virtio_snd_dev_t));
-    if (!adev->priv) return -ENOMEM;
+    if (!adev->priv) {
+        kprint("Failed to allocate virtio sound device\n");
+        return -ENOMEM;
+    }
     virtio_snd_dev_t* dev = adev->priv;
 
     int ret = 0;
     if ((ret = virtio_find_pci_device(VIRTIO_DEV_SND, &dev->dev, 0)) < 0) {
+        kprint("Failed to find virtio sound device\n");
         free(adev->priv);
         return ret;
     }
@@ -242,12 +259,14 @@ int virtio_snd_open(audio_dev_t* adev) {
 
     if (virtqueue_init(&dev->dev, VIRTSND_CONTROLQ, &dev->queues[VIRTSND_CONTROLQ]) < 0) {
         virtio_set_status(&dev->dev, VIRTIO_STATUS_FAILED);
+        kprint("failed to create controlq\n");
         free(adev->priv);
         return -EINVAL;
     }
 
     if (virtqueue_init(&dev->dev, VIRTSND_EVENTQ, &dev->queues[VIRTSND_EVENTQ]) < 0) {
         virtio_set_status(&dev->dev, VIRTIO_STATUS_FAILED);
+        kprint("failed to create eventq\n");
         virtqueue_free(&dev->queues[VIRTSND_CONTROLQ]);
         free(adev->priv);
         return -EINVAL;
@@ -255,6 +274,7 @@ int virtio_snd_open(audio_dev_t* adev) {
 
     if (virtqueue_init(&dev->dev, VIRTSND_TXQ, &dev->queues[VIRTSND_TXQ]) < 0) {
         virtio_set_status(&dev->dev, VIRTIO_STATUS_FAILED);
+        kprint("failed to create txq\n");
         virtqueue_free(&dev->queues[VIRTSND_CONTROLQ]);
         virtqueue_free(&dev->queues[VIRTSND_EVENTQ]);
         free(adev->priv);
@@ -263,6 +283,7 @@ int virtio_snd_open(audio_dev_t* adev) {
 
     if (virtqueue_init(&dev->dev, VIRTSND_RXQ, &dev->queues[VIRTSND_RXQ]) < 0) {
         virtio_set_status(&dev->dev, VIRTIO_STATUS_FAILED);
+        kprint("failed to create rxq\n");
         virtqueue_free(&dev->queues[VIRTSND_CONTROLQ]);
         virtqueue_free(&dev->queues[VIRTSND_EVENTQ]);
         virtqueue_free(&dev->queues[VIRTSND_TXQ]);
@@ -280,6 +301,7 @@ int virtio_snd_open(audio_dev_t* adev) {
             for (usize j = 0; j < i; j++) {
                 pmm_ffree((void*)dev->evtbufs[i].phys, 1);
             }
+            kprint("failed to allocate eventq buffers\n");
             free(adev->priv);
             return -ENOMEM;
         }
@@ -293,6 +315,7 @@ int virtio_snd_open(audio_dev_t* adev) {
             for (usize j = 0; j < i; j++) {
                 pmm_ffree((void*)dev->evtbufs[i].phys, 1);
             }
+            kprint("failed to allocate eventq descriptors\n");
             free(adev->priv);
             return -ENOMEM;
         }
@@ -303,7 +326,6 @@ int virtio_snd_open(audio_dev_t* adev) {
         virtqueue_submit_chain(&dev->queues[VIRTSND_EVENTQ], dev->evtbufs[i].dsc);
     }
 
-    virtqueue_kick(&dev->queues[VIRTSND_EVENTQ]);
     adev->njacks = virtio_read_config32(&dev->dev, 0);
     adev->nstreams = virtio_read_config32(&dev->dev, 4);
    
@@ -315,5 +337,7 @@ int virtio_snd_open(audio_dev_t* adev) {
     adev->ops.stop = vsnd_stop;
     adev->ops.submit_buffer = vsnd_submit_buffer;
 
+    virtio_add_status(&dev->dev, VIRTIO_STATUS_DRIVER_OK);
+    virtqueue_kick(&dev->queues[VIRTSND_EVENTQ]);
     return 0;
 }

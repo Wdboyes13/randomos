@@ -45,6 +45,7 @@ void vmm_unmap_page(page_table_t* pml4v, u64 virt, u64 flags);
 void vmm_unmap_pages(page_table_t* pml4v, u64 vst, size_t pgcnt, u64 flags);
 u64 vmm_get_phys(page_table_t* pml4v, u64 virt);
 int vmm_setflgs(page_table_t* pml4v, u64 svirt, usize npgs, u64 flgs);
+int vmm_getflgs(page_table_t* pml4v, u64 virt, u64* flgs);
 
 page_table_t* vmm_cpml4v();
 page_table_t* vmm_casp();

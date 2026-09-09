@@ -27,7 +27,7 @@ QFLAGS := -M pc -cpu qemu64 -boot d -smp 2 -m 1G -serial stdio -accel tcg \
 		  -netdev user,id=net0 -device virtio-net-pci,netdev=net0 \
 		  -device virtio-rng-pci \
 		  -monitor unix:/tmp/qemu-monitor.sock,server=on,wait=off \
-		  -d int,cpu_reset -D qemu.log
+		  -d int,cpu_reset -D qemu.log -device virtio-sound-pci
 
 QFLAGS_HEADLESS := -display none -serial file:qemu.log
 

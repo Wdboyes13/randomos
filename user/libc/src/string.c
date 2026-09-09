@@ -248,7 +248,7 @@ char* strncpy(char* dst, const char* src, usize sz) {
 
 char* strcpy(char* dst, const char* src) {
     usize sl = strlen(src);
-    for (usize i = 0; i < sl; i++) {
+    for (usize i = 0; i <= sl; i++) {
         dst[i] = src[i];
     }
     return dst;

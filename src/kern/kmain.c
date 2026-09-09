@@ -1,3 +1,4 @@
+#include "drivers/sound/audio.h"
 #include <stdatomic.h>
 #include <core/mem/vmm.h>
 #include <core/mem/pmm.h>
@@ -214,6 +215,10 @@ __no_protect void kmain_aftergdt() {
     kprint("IO: Requesting mouse type %d\n", mbtype);
     if (virtio_input_ptr_available()) mbtype = MOUSE_VIRTIO;
     init_mouse(mbtype);
+
+    kprint("Initializing VirtIO Audio\n");
+    audio_dev_t* dev = open_sound(SNDDEV_VIRTIO);
+    (void)dev; // we're just testing that initialization is working properly for now
 
     if (ncores > 1) {
         kprint("Testing AP\n");

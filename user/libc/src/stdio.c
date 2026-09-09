@@ -307,6 +307,7 @@ int fileno(FILE* f) {
 
 void __libc_setupfail();
 
+#include <io.h>
 void __libc_init_stdioptr(FILE** ptr, int fd, int fflags) {
     *ptr = malloc(sizeof(FILE*));
     if (!*ptr) __libc_setupfail();
@@ -315,6 +316,7 @@ void __libc_init_stdioptr(FILE** ptr, int fd, int fflags) {
         free(*ptr);
         __libc_setupfail();
     }
+    serial_printf("got buffer %p for fd %d\n", (*ptr)->buf);
 
     (*ptr)->fd = fd;
     (*ptr)->bufsz = FILE_BUFSZ; 
@@ -323,7 +325,6 @@ void __libc_init_stdioptr(FILE** ptr, int fd, int fflags) {
     (*ptr)->flags = fflags;
 }
 
-#include <io.h>
 void __libc_fini_stdioptr(FILE** ptr) {
     fflush(*ptr);
     free((*ptr)->buf);
@@ -337,7 +338,9 @@ void __libc_initstdio() {
 }
 
 void __libc_finistdio() {
-    __libc_fini_stdioptr(&__libc_stdout__);
-    __libc_fini_stdioptr(&__libc_stderr__);
-    __libc_fini_stdioptr(&__libc_stdin__);
+    // this is broken for now, but kernel cleans up all process
+    //     memory on exit, so it doesn't really matter
+    //__libc_fini_stdioptr(&__libc_stdout__);
+    //__libc_fini_stdioptr(&__libc_stderr__);
+    //__libc_fini_stdioptr(&__libc_stdin__);
 }

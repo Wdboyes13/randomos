@@ -2,6 +2,7 @@
 #include <core/std.h>
 #include <drivers/virtio/virtio.h>
 #include <drivers/virtio/virtqueue.h>
+#include <drivers/sound/audio.h>
 
 #define VIRTSND_CONTROLQ 0
 #define VIRTSND_EVENTQ   1
@@ -248,3 +249,5 @@ typedef struct {
     virtqueue_t queues[4];
     virtio_snd_evtbuf_t evtbufs[16];
 } virtio_snd_dev_t;
+
+int virtio_snd_open(audio_dev_t* adev);

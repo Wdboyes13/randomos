@@ -12,9 +12,8 @@
 #define VIRTIO_DEV_CONSOLE       0x1003
 #define VIRTIO_DEV_SCSI          0x1004
 #define VIRTIO_DEV_RNG           0x1005
-#define VIRTIO_DEV_INPUT        0x1012
+#define VIRTIO_DEV_INPUT         0x1012
 #define VIRTIO_DEV_9P            0x1009
-#define VIRTIO_DEV_SND 0x1019
 
 /* VirtIO Modern / Transitional Device IDs (Offset 0x1040) */
 #define VIRTIO_DEV_MODERN_NET    0x1041
@@ -23,6 +22,7 @@
 #define VIRTIO_DEV_MODERN_RNG    0x1044
 #define VIRTIO_DEV_MODERN_GPU    0x1050
 #define VIRTIO_DEV_MODERN_INPUT  0x1052
+#define VIRTIO_DEV_SND           0x1059
 
 /* VirtIO PCI Legacy Register Offsets (relative to BAR0 I/O base) */
 #define VIRTIO_REG_DEVICE_FEATURES 0x00 /* 32-bit R */

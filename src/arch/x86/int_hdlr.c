@@ -50,14 +50,16 @@ static void kill_user_process(struct CpuState* regs, const char* msg, va_list ls
         panic("pid0 exited");
     }
 
+    vmm_remumap(current_pid, uasp);
+    vmm_dasp(uasp);
+    proctbl[current_pid].used = 0;
+
     // context is garbage — process is dead, so what we save doesn't matter
     asm volatile("cli");
     procctx_t abandoned = {0};
     scheduler_switch(&abandoned);
 
     // scheduler_switch returns only when nothing is left to run
-    vmm_remumap(current_pid, uasp);
-    vmm_dasp(uasp);
     panic("all processes have exited");
 }
 
@@ -123,12 +125,22 @@ void c_int_hdlr(struct CpuState* regs) {
             u64 badaddr;
             u32 ec = regs->error_code;
             asm volatile("mov %%cr2, %0" : "=r"(badaddr));
-            except_panic(regs, "Page fault on address 0x%016x (%s %s %s %s %s)",
+            u64 flgs = 0;
+
+            if (ec & (1 << 0)) {
+                if (vmm_getflgs(vmm_cpml4v(), badaddr, &flgs) < 0) {
+                    serial_printf("failed to get vmm flags for panic\n");
+                    flgs = 0;
+                }
+            }
+
+            except_panic(regs, "Page fault on address 0x%016lx (%s %s %s %s %016lx %s)",
                 badaddr,
                 (ec & (1 << 0)) ? "Present" : "Not-Present",
                 (ec & (1 << 1)) ? "Write" : "Read",
                 (ec & (1 << 2)) ? "User" : "Supervisor",
                 (ec & (1 << 4)) ? "Instruction-Fetch" : "Access",
+                (ec & (1 << 0)) ? flgs : 0,
                 syms
             );
             break;

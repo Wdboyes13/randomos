@@ -89,3 +89,6 @@ struct AudioDeviceType {
     audio_ops_t ops;
     void* priv;
 };
+
+#define SNDDEV_VIRTIO 1
+audio_dev_t* open_sound(int type);

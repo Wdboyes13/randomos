@@ -304,13 +304,13 @@ HIDDEN object_t* load_library(const char* path, usize lodbase, usize* ldsz) {
                 ldso_exit(1);
             }
 
-            if (phdrs[i].p_memsz > phdrs[i].p_filesz) {
-                memset((void*)(segvaddr + phdrs[i].p_filesz), 0, phdrs[i].p_memsz - phdrs[i].p_filesz);
-            }
-
             ssize nread = ldso_read(fd, addr, phdrs[i].p_filesz);
             if (nread < 0 || (usize)nread < phdrs[i].p_filesz) {
                 ldso_exit(1);
+            }
+
+            if (phdrs[i].p_memsz > phdrs[i].p_filesz) {
+                memset((void*)(segvaddr + phdrs[i].p_filesz), 0, phdrs[i].p_memsz - phdrs[i].p_filesz);
             }
 
             u64 flgs = 0; // kern auto-applied PAGE_USER

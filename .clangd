@@ -24,3 +24,6 @@ CompileFlags:
         - -I/Users/william/dev/work/coding/randomos/user/nasm/nasmlib
         - -I/Users/william/dev/work/coding/randomos/user/nasm/output
         - -xc
+
+Index:
+    Background: Skip

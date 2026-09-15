@@ -392,7 +392,7 @@ CREDITS
 #define INCLUDE_STB_DS_H
 
 #include <stddef.h>
-#include <string.h>
+#include <str.h>
 
 #ifndef STBDS_NO_SHORT_NAMES
 #define arrlen      stbds_arrlen
@@ -456,7 +456,7 @@ CREDITS
 #error "You must define both STBDS_REALLOC and STBDS_FREE, or neither."
 #endif
 #if !defined(STBDS_REALLOC) && !defined(STBDS_FREE)
-#include <stdlib.h>
+#include <mem.h>
 #define STBDS_REALLOC(c,p,s) realloc(p,s)
 #define STBDS_FREE(c,p)      free(p)
 #endif
@@ -731,7 +731,7 @@ template<class T> static T * stbds_shmode_func_wrapper(T *, size_t elemsize, int
 
 #ifdef STB_DS_IMPLEMENTATION
 #include <assert.h>
-#include <string.h>
+#include <str.h>
 
 #ifndef STBDS_ASSERT
 #define STBDS_ASSERT_WAS_UNDEFINED

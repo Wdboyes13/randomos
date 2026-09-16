@@ -1,16 +1,15 @@
 CC := clang --target=x86_64-elf
 LD := ld.lld
 
-CFLAGS := -m64 -nostdlib -fno-builtin -ffreestanding -fno-pie -g -MMD \
-	-MP -mno-mmx -mno-sse -mno-sse2 -mno-red-zone -msoft-float \
-	-mno-fp-ret-in-387 -Wall -Wextra -O2 -std=c17 \
+CFLAGS := $(DFLCFLAGS) -Wall -Wextra -O2 -std=c17 \
 	-fwrapv -ftrivial-auto-var-init=zero -fno-common \
-	-ffunction-sections -fdata-sections -Wall -I. -I./include \
-	-I./x86 -I./asm -I./disasm -I../libc/include -I./output -I./output \
-	-I../libs/zlib -MMD -MP
+	-ffunction-sections -fdata-sections \
+	-I. -I./include -I./x86 -I./asm -I./disasm \
+	-I$(USRROOT)/toolchain/libc/include \
+	-I./output -I$(USRROOT)/toolchain/libs/zlib
 
 LDFLAGS := -m elf_x86_64 --no-pie --dynamic-linker=/lib/ld.so --allow-shlib-undefined --hash-style=both
-LDLIBS  := -L../libc -L../libs/zlib -lc -lz ../libc/crt0.o
+LDLIBS  := -L$(USRROOT)/toolchain/libc -L$(USRROOT)/toolchain/libs/zlib -lc -lz $(USRROOT)/toolchain./libc/crt0.o
 
 SRCS := $(wildcard asm/*.c) \
 		$(wildcard common/*.c) \

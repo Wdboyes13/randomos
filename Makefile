@@ -11,6 +11,12 @@ CCFLAGS      := -mcmodel=kernel -mno-mmx -mno-sse -mno-sse2 -mno-red-zone \
 				-m64 -nostdlib -fno-builtin -fno-pie -Iinclude \
 		        -nodefaultlibs -ffreestanding -Wall -Wextra -g \
 		        -MMD -MP -O0 -fstack-protector-strong \
+
+USRFLAGS := -mno-mmx -mno-sse -mno-sse2 -mno-red-zone \
+			-msoft-float -mno-fp-ret-in-387 \
+			-m64 -nostdlib -fno-builtin -fno-pie \
+		    -nodefaultlibs -ffreestanding -g \
+		    -MMD -MP -fstack-protector-strong
 				
 XORRISOFLAGS := -as mkisofs -R -r -J -b boot/limine/limine-bios-cd.bin \
         		-no-emul-boot -boot-load-size 4 -boot-info-table -hfsplus \
@@ -44,16 +50,15 @@ INITRD := initrd.img
 INITRD_STAGE := .initrd-stage
 PYTHON ?= python3
 
-SUBDIRS := user/libs/zlib user/libs/libmcrypto \
-		   user/libc user/progs user/nasm share/etc share/man \
-		   vendor/lwip-2.2.1 vendor/flanterm \
-		   vendor/uACPI
+SUBDIRS := user \
+		   share/etc share/man \
+		   vendor/lwip-2.2.1 vendor/flanterm vendor/uACPI
 
 all: $(DRIVE) subdirs $(ISO)
 
 subdirs:
 	@for dir in $(SUBDIRS); do \
-		$(MAKE) -C $$dir 'CC=$(CC)' 'LD=$(LD)' 'AS=$(AS)' 'AR=$(AR)' 'NM=$(NM)' 'DRIVE=$(shell realpath $(DRIVE))' 'DFLCFLAGS=$(CCFLAGS)' || exit 1; \
+		$(MAKE) -C $$dir 'CC=$(CC)' 'LD=$(LD)' 'AS=$(AS)' 'AR=$(AR)' 'NM=$(NM)' 'DRIVE=$(shell realpath $(DRIVE))' 'DFLCFLAGS=$(USRFLAGS)' || exit 1; \
 	done
 
 $(DRIVE):

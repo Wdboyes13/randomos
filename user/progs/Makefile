@@ -3,12 +3,10 @@ include ../../mk/tools.mk
 # compile and link are separate steps and the link goes straight to
 # ld.lld, same reason as the kernel makefile: clang would delegate to
 # host gcc and every machine interprets that differently
-CCFLAGS := -m64 -nostdlib -fno-builtin \
-    -I../libc/include -ffreestanding \
-	-I../libs/libmcrypto -fno-pie -g -MMD \
-	-MP -mno-mmx -mno-sse -mno-sse2 \
-	-mno-red-zone -msoft-float \
-	-mno-fp-ret-in-387 -Wall -Wextra -Werror
+CCFLAGS := $(DFLCFLAGS)
+    -I$(USRROOT)/toolchain/libc/include \
+	-I$(USRROOT)/toolchain/libs/libmcrypto -fno-pie \
+	-Wall -Wextra -Werror
 LDFLAGS := -m elf_x86_64 --no-pie --dynamic-linker=/lib/ld.so --allow-shlib-undefined --hash-style=both
 
 PROGS := init sh echo cat \
@@ -17,12 +15,9 @@ PROGS := init sh echo cat \
 		 rm wm fbtest dspinfo \
 		 wintest keytest mousetest \
 		 id whoami serialtest environ \
-		 random man rtop ioctest dump
-
-PROGS_C := login
-
-DEPLIBS := ../libc/libc.so ../libc/crt0.o
-DEPLIBS_C := ../libs/libmcrypto/libmcrypto.so
+		 random man rtop ioctest dump \
+		 login
+LIBS := $(USRROOT)/toolchain/libc/libc.so  $(USRROOT)/toolchain/libc/crt0.o
 
 DEPS := $(PROGS:=.d)
 
@@ -31,17 +26,10 @@ PROGFILES_C := $(PROGS_C:=.elf)
 
 all: $(PROGFILES) $(PROGFILES_C) copy
 
-$(PROGFILES): %.elf: %.c $(DEPLIBS)
+$(PROGFILES): %.elf: %.c
 	$(CC) $(CCFLAGS) -c $< -o $(basename $@).o
-	$(LD) $(LDFLAGS) $(basename $@).o $(DEPLIBS) -o $@
+	$(LD) $(LDFLAGS) $(basename $@).o $(LIBS) -o $@
 
-$(PROGFILES_C): %.elf: %.c $(DEPLIBS) $(DEPLIBS_C)
-	$(CC) $(CCFLAGS) -c $< -o $(basename $@).o
-	$(LD) $(LDFLAGS) $(basename $@).o $(DEPLIBS) $(DEPLIBS_C) -o $@
-
-# copy is its own pass so a freshly created drive.img gets populated
-# even when every .elf is already built - mcopy used to live inside the
-# link rules and up-to-date targets skipped it, leaving /bin half empty
 copy: $(PROGFILES) $(PROGFILES_C)
 	for f in $(PROGFILES) $(PROGFILES_C); do \
 		debugfs -w -R "rm /bin/$$(basename $$f .elf)" $(DRIVE); \

@@ -67,12 +67,17 @@ Changes made are:
 ## NASM
 From https://www.nasm.us  
 Copyright 1996-2025 the NASM Authors - All rights reserved.  
-NASM is licensed under the BSD-2-Clause license at [user/nasm/info/LICENS](/user/nasm/info/LICENSE)  
+NASM is licensed under the BSD-2-Clause license at [user/oolchainnasm/info/LICENS](/user/toolchain/nasm/info/LICENSE)  
 
 ## uACPI  
 From https://github.com/uACPI/uACPI  
 Copyright (c) 2022-2026 Daniil Tatianin  
 uACPI is licensed under the MIT license at [vendor/uACPI/LICENSE](/vendor/uACPI/LICENSE)  
+
+## ezld
+From https://github.com/Alessandro-Salerno/ezld  
+Copyright (c) 2025 - 2026 Alessandro Salerno  
+ezld is licensed under the MIT license at [user/toolchain/ld/LICENSE](/user/toolchain/ld/LICENSE)  
 
 ## This project (full license)
 MIT License  

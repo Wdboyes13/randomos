@@ -1,10 +1,7 @@
 CC := clang --target=x86_64-elf
-CFLAGS := -m64 -nostdlib \
-	-fno-builtin -I../../libc/include -nodefaultlibs \
-    -ffreestanding -Wall -Wextra -g \
-	-MMD -MP -mno-mmx -mno-sse -mno-sse2 \
-	-mno-red-zone -msoft-float -mno-fp-ret-in-387 \
-	-Werror -fPIC -I.
+CFLAGS := $(DFLCFLAGS) -I$(USRROOT)/toolchain/libc/include \
+		  -Wall -Wextra -Werror -fPIC -I.
+		  
 LDFLAGS := -shared -Wl,-soname,/lib/libz.so -Wl,-shared -m64 -nostdlib -ffreestanding -nostartfiles -Wl,--hash-style=both
 
 LIB := libz.so

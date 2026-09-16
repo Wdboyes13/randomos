@@ -228,6 +228,7 @@ typedef struct {
 
 // section types
 #define SHT_NULL    0
+#define SHT_PROGBITS 1
 #define SHT_SYMTAB  2
 #define SHT_STRTAB  3
 #define SHT_RELA    4

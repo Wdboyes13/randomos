@@ -1,11 +1,7 @@
 include ../../../mk/tools.mk
 
-CCFLAGS := -m64 -nostdlib \
-	-fno-builtin -I../../libc/include -nodefaultlibs \
-    -ffreestanding -Wall -Wextra -g \
-	-MMD -MP -mno-mmx -mno-sse -mno-sse2 \
-	-mno-red-zone -msoft-float -mno-fp-ret-in-387 \
-	-Werror -fPIC
+CCFLAGS := $(DFLCFLAGS) -I$(USRROOT)/toolchain/libc/include-Wall \
+		   -Wextra -Werror -fPIC
 LDFLAGS := -shared -Wl,-soname,/lib/libmcrypto.so -Wl,-shared -m64 -nostdlib -ffreestanding -nostartfiles -Wl,--hash-style=both
 
 LIB := libmcrypto.so

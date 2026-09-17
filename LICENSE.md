@@ -74,10 +74,14 @@ From https://github.com/uACPI/uACPI
 Copyright (c) 2022-2026 Daniil Tatianin  
 uACPI is licensed under the MIT license at [vendor/uACPI/LICENSE](/vendor/uACPI/LICENSE)  
 
-## ezld
-From https://github.com/Alessandro-Salerno/ezld  
-Copyright (c) 2025 - 2026 Alessandro Salerno  
-ezld is licensed under the MIT license at [user/toolchain/ld/LICENSE](/user/toolchain/ld/LICENSE)  
+## LLVM  
+From https://github.com/llvm/llvm-project  
+Copyright (c) 2019-2026 The LLVM Project Contributors  
+Copyright (c) 2003-2019 University of Illinois at Urbana-Champaign. All rights reserved.  
+
+LLVM is licensed under the Apache 2.0 license with LLVM exceptions, and partially under the Legacy LLVM License. Both are at [user/llvm/LICENSE.TXT](/user/llvm/LICENSE.TXT)  
+
+List of changes are at [user/llvm/CHANGES](/user/llvm/CHANGES)  
 
 ## This project (full license)
 MIT License  

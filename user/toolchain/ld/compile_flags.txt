@@ -1,5 +1,0 @@
--Iinclude/ 
--Wall 
--Wextra 
--Wpedantic
--std=gnu11

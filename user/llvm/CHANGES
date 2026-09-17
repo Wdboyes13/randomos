@@ -1,0 +1,41 @@
+removed
+    - git repo folder
+    - .clang-*
+    - .git-*
+    - .gitattributes
+    - .github
+    - .mailmap
+    - .ci
+    - bolt
+    - clang (may be readded)
+    - clang-tools-extra (may be readded)
+    - compiler-rt
+    - cross-project-tests
+    - flang
+    - flang-rt
+    - libc
+    - libsycl
+    - libclc
+    - lld (will be readded in future)
+    - lldb
+    - llvm/ (will be readded in future)
+    - llvm-libgcc
+    - mlir
+    - offload
+    - openmp
+    - orc-rt
+    - polly
+    - runtimes
+    - third-party
+    - utils
+    - SECURITY.md 
+    - CONTRIBUTING.md
+    - README.md
+    - CODE_OF_CONDUCT.md
+    - pyproject.toml
+    
+changes to be made:
+    - porting of libcxx/
+    - porting of libcxxabi/
+    - porting of libunwind/
+    - switching cmake to makefile

@@ -33,6 +33,17 @@ removed
     - README.md
     - CODE_OF_CONDUCT.md
     - pyproject.toml
+    - libcxx/test
+    - libcxx/docs
+    - libcxx/modules
+    - libcxxabi/www
+    - libcxxabi/test
+    - libunwind/test
+    - libunwind/docs
+    - libcxx/.clang-*
+    - libcxxabi/.clang-*
+    - libunwind/.clang-*
+    - libcxx/TODO.txt
     
 changes to be made:
     - porting of libcxx/

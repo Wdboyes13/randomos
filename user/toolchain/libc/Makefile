@@ -1,4 +1,4 @@
-include ../../mk/tools.mk
+include ../../../mk/tools.mk
 
 ASFLAGS := -felf64
 CFLAGS := -m64 -nostdlib \

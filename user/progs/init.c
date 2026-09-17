@@ -21,7 +21,7 @@ const usize nlines = 8;
 void print_banner() {
     term_pos_t sz;
     termctl(TCTL_GETSZ, (u64)&sz);
-    serial_printf("terminal size: x=%lu  y=%lu\n", (unsigned long)sz.x, (unsigned long)sz.y);
+    // serial_printf("terminal size: x=%lu  y=%lu\n", (unsigned long)sz.x, (unsigned long)sz.y);
 
     usize bufsz = (sz.x + 1) * 2;
     for (usize i = 0; i < nlines; i++) {
@@ -36,15 +36,15 @@ void print_banner() {
 
     usize bufi = 0;
 
-    serial_printf("buffer size %lu at %p\n", bufsz, buf);
+    // serial_printf("buffer size %lu at %p\n", bufsz, buf);
 
-    serial_printf("top banner\n");
+    // serial_printf("top banner\n");
     memset(buf + bufi, '=', sz.x);
     bufi += sz.x;
     buf[bufi++] = '\n';
 
     for (usize i = 0; i < nlines; i++) {
-        serial_printf("line %d\n", i);
+        // serial_printf("line %d\n", i);
         usize len = strlen(banner_lines[i]);
         usize pad = (sz.x > len) ? (sz.x - len) / 2 : 0;
 
@@ -55,7 +55,7 @@ void print_banner() {
         buf[bufi++] = '\n';
     }
 
-    serial_printf("bottom banner\n");
+    // serial_printf("bottom banner\n");
     memset(buf + bufi, '=', sz.x);
     bufi += sz.x;
     buf[bufi++] = '\n';

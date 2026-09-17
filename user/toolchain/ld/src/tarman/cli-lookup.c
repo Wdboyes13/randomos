@@ -18,8 +18,8 @@
 
 #include <ezld/cli-commands.h>
 #include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
+#include <mem.h>
+#include <str.h>
 #include <tarman/cli-lookup.h>
 
 static cli_drt_desc_t commands[] = {

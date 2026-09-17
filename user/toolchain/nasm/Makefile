@@ -3,13 +3,13 @@ LD := ld.lld
 
 CFLAGS := $(DFLCFLAGS) -Wall -Wextra -O2 -std=c17 \
 	-fwrapv -ftrivial-auto-var-init=zero -fno-common \
-	-ffunction-sections -fdata-sections \
+	-ffunction-sections -fdata-sections -Wno-unused-function \
 	-I. -I./include -I./x86 -I./asm -I./disasm \
 	-I$(USRROOT)/toolchain/libc/include \
 	-I./output -I$(USRROOT)/toolchain/libs/zlib
 
 LDFLAGS := -m elf_x86_64 --no-pie --dynamic-linker=/lib/ld.so --allow-shlib-undefined --hash-style=both
-LDLIBS  := -L$(USRROOT)/toolchain/libc -L$(USRROOT)/toolchain/libs/zlib -lc -lz $(USRROOT)/toolchain./libc/crt0.o
+LDLIBS  := -L$(USRROOT)/toolchain/libc -L$(USRROOT)/toolchain/libs/zlib -lc -lz $(USRROOT)/toolchain/libc/crt0.o
 
 SRCS := $(wildcard asm/*.c) \
 		$(wildcard common/*.c) \

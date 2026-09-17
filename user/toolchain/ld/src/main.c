@@ -49,6 +49,6 @@ int main(int argc, const char *argv[]) {
 
     ezld_array_free(cfg.cfg_objpaths);
     ezld_array_free(cfg.cfg_sections);
-    return EXIT_SUCCESS;
+    return 0;
 }
 #endif

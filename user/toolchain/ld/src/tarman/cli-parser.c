@@ -19,7 +19,7 @@
 #include <ezld/array.h>
 #include <ezld/runtime.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <mem.h>
 #include <tarman/cli-lookup.h>
 #include <tarman/cli-parser.h>
 

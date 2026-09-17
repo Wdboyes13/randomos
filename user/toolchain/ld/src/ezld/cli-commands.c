@@ -19,7 +19,7 @@
 #include <ezld/linker.h>
 #include <ezld/runtime.h>
 #include <stddef.h>
-#include <string.h>
+#include <str.h>
 
 #define STR_HELPER(x) #x
 #define STR(x)        STR_HELPER(x)

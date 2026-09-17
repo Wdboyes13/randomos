@@ -59,3 +59,4 @@ char* fgets(char* s, int n, FILE* f);
 int remove(const char* path);
 int ungetc(int c, FILE* stream);
 int fileno(FILE* f);
+void puts(const char* s);

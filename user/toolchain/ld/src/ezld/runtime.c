@@ -23,7 +23,9 @@
 #include <ezld/runtime.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <mem.h>
+#include <io.h>
+#include <exit.h>
 
 static int          g_argc;
 static const char **g_argv;

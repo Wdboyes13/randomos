@@ -1,4 +1,4 @@
-include ../../../mk/tools.mk
+include ../../../../mk/tools.mk
 
 CCFLAGS := $(DFLCFLAGS) -I$(USRROOT)/toolchain/libc/include-Wall \
 		   -Wextra -Werror -fPIC

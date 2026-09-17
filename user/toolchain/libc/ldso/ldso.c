@@ -67,7 +67,6 @@ HIDDEN Elf64_Auxv* ldso_auxv;
 HIDDEN u64 __atmmaplow_vaddr = 0;
 HIDDEN u64 __atmmaphigh_vaddr = 0;
 
-
 u64 getauxval(u64 type) {
     if (type == AT_MMAPLOW) {
         return __atmmaplow_vaddr;

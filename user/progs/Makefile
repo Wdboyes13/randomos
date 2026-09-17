@@ -3,7 +3,7 @@ include ../../mk/tools.mk
 # compile and link are separate steps and the link goes straight to
 # ld.lld, same reason as the kernel makefile: clang would delegate to
 # host gcc and every machine interprets that differently
-CCFLAGS := $(DFLCFLAGS)
+CCFLAGS := $(DFLCFLAGS) \
     -I$(USRROOT)/toolchain/libc/include \
 	-I$(USRROOT)/toolchain/libs/libmcrypto -fno-pie \
 	-Wall -Wextra -Werror
@@ -16,7 +16,7 @@ PROGS := init sh echo cat \
 		 wintest keytest mousetest \
 		 id whoami serialtest environ \
 		 random man rtop ioctest dump \
-		 login
+		 login nl
 LIBS := $(USRROOT)/toolchain/libc/libc.so  $(USRROOT)/toolchain/libc/crt0.o
 
 DEPS := $(PROGS:=.d)
@@ -24,19 +24,16 @@ DEPS := $(PROGS:=.d)
 PROGFILES := $(PROGS:=.elf)
 PROGFILES_C := $(PROGS_C:=.elf)
 
-all: $(PROGFILES) $(PROGFILES_C) copy
+all: $(PROGFILES)
 
-$(PROGFILES): %.elf: %.c
+$(PROGFILES): %.elf: %.c $(LIBS)
 	$(CC) $(CCFLAGS) -c $< -o $(basename $@).o
 	$(LD) $(LDFLAGS) $(basename $@).o $(LIBS) -o $@
-
-copy: $(PROGFILES) $(PROGFILES_C)
-	for f in $(PROGFILES) $(PROGFILES_C); do \
-		debugfs -w -R "rm /bin/$$(basename $$f .elf)" $(DRIVE); \
-		debugfs -w -R "write $$f /bin/$$(basename $$f .elf)" $(DRIVE); \
-	done
+	debugfs -w -R "rm /bin/$$(basename $@ .elf)" $(DRIVE)
+	debugfs -w -R "write $@ /bin/$$(basename $@ .elf)" $(DRIVE)
 
 clean:
 	rm -f $(PROGFILES) $(PROGS:=.o) $(DEPS) $(DRIVE)
-.PHONY: all copy clean
+
+.PHONY: all clean
 -include $(DEPS)

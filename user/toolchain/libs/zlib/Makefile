@@ -1,7 +1,7 @@
 CC := clang --target=x86_64-elf
 CFLAGS := $(DFLCFLAGS) -I$(USRROOT)/toolchain/libc/include \
 		  -Wall -Wextra -Werror -fPIC -I.
-		  
+
 LDFLAGS := -shared -Wl,-soname,/lib/libz.so -Wl,-shared -m64 -nostdlib -ffreestanding -nostartfiles -Wl,--hash-style=both
 
 LIB := libz.so

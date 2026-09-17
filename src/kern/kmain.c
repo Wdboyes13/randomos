@@ -202,9 +202,10 @@ __no_protect void kmain_aftergdt() {
 
     virtio_rng_init();
     rng_init();
-    virtio_net_init();
+    if (virtio_net_init() < 0) {
+        e1000_init();
+    }
     virtio_input_init();
-    e1000_init();
     init_lwip();
 
     init_syscalls();

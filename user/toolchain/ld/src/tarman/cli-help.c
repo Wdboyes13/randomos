@@ -17,8 +17,9 @@
 *************************************************************************/
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <io.h>
+#include <mem.h>
+#include <str.h>
 #include <tarman/cli-lookup.h>
 
 #define BASE_LINE_LEN        4

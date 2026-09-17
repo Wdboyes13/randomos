@@ -3,6 +3,7 @@
 #include <fs.h>
 #include <str.h>
 #include <mem.h>
+#include <io.h>
 
 FILE* __libc_stdout__ = NULL;
 FILE* __libc_stdin__  = NULL;
@@ -303,6 +304,13 @@ int ungetc(int c, FILE* stream) {
 
 int fileno(FILE* f) {
     return f->fd;
+}
+
+void puts(const char* s) {
+    while (*s != '\0') {
+        putchar(*s++);
+    }
+    putchar('\n');
 }
 
 void __libc_setupfail();

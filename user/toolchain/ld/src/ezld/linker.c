@@ -28,7 +28,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <string.h>
+#include <str.h>
 
 #define EZLD_ENTRY_NAME         0
 #define EZLD_GLOB_SYM_UNDEF     0
@@ -1356,6 +1356,7 @@ static void free_instance(void) {
             ezld_array_free(symtab->ost_syms);
         }
         ezld_array_free(obj->obj_symtabs);
+        fflush(obj->obj_file);
         fclose(obj->obj_file);
     }
 
@@ -1366,6 +1367,7 @@ static void free_instance(void) {
 
     ezld_array_free(g_self->i_mss);
     ezld_array_free(g_self->i_objs);
+    fflush(g_self->i_out.out_file);
     fclose(g_self->i_out.out_file);
 }
 

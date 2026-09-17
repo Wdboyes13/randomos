@@ -19,7 +19,7 @@
 #pragma once
 
 #include <stdbool.h>
-#include <stdlib.h>
+#include <mem.h>
 #include <tarman/cli-parser.h>
 
 typedef struct {

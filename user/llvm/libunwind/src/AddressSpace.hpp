@@ -14,8 +14,11 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <mem.h>
+#include <str.h>
+#include <exit.h>
+#include <io.h>
+#include <sys/elf.h>
 
 #include "libunwind.h"
 #include "config.h"
@@ -23,103 +26,7 @@
 #include "EHHeaderParser.hpp"
 #include "Registers.hpp"
 
-#ifndef _LIBUNWIND_USE_DLADDR
-  #if !(defined(_LIBUNWIND_IS_BAREMETAL) || defined(_WIN32) || defined(_AIX))
-    #define _LIBUNWIND_USE_DLADDR 1
-  #else
-    #define _LIBUNWIND_USE_DLADDR 0
-  #endif
-#endif
-
-#if _LIBUNWIND_USE_DLADDR
-#include <dlfcn.h>
-#if defined(__ELF__) && defined(_LIBUNWIND_LINK_DL_LIB)
-#pragma comment(lib, "dl")
-#endif
-#endif
-
-#if defined(_LIBUNWIND_ARM_EHABI)
-struct EHABIIndexEntry {
-  uint32_t functionOffset;
-  uint32_t data;
-};
-#endif
-
-#if defined(_AIX)
-namespace libunwind {
-char *getFuncNameFromTBTable(uintptr_t pc, uint16_t &NameLen,
-                             unw_word_t *offset);
-}
-#endif
-
-#ifdef __APPLE__
-
-  struct dyld_unwind_sections
-  {
-    const struct mach_header*   mh;
-    const void*                 dwarf_section;
-    uintptr_t                   dwarf_section_length;
-    const void*                 compact_unwind_section;
-    uintptr_t                   compact_unwind_section_length;
-  };
-
-  // In 10.7.0 or later, libSystem.dylib implements this function.
-  extern "C" bool _dyld_find_unwind_sections(void *, dyld_unwind_sections *);
-
-namespace libunwind {
-  bool findDynamicUnwindSections(void *, unw_dynamic_unwind_sections *);
-}
-
-#elif defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND) && defined(_LIBUNWIND_IS_BAREMETAL)
-
-// When statically linked on bare-metal, the symbols for the EH table are looked
-// up without going through the dynamic loader.
-
-// The following linker script may be used to produce the necessary sections and symbols.
-// Unless the --eh-frame-hdr linker option is provided, the section is not generated
-// and does not take space in the output file.
-//
-//   .eh_frame :
-//   {
-//       __eh_frame_start = .;
-//       KEEP(*(.eh_frame))
-//       __eh_frame_end = .;
-//   }
-//
-//   .eh_frame_hdr :
-//   {
-//       KEEP(*(.eh_frame_hdr))
-//   }
-//
-//   __eh_frame_hdr_start = SIZEOF(.eh_frame_hdr) > 0 ? ADDR(.eh_frame_hdr) : 0;
-//   __eh_frame_hdr_end = SIZEOF(.eh_frame_hdr) > 0 ? . : 0;
-
-extern char __eh_frame_start;
-extern char __eh_frame_end;
-
-#if defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
-extern char __eh_frame_hdr_start;
-extern char __eh_frame_hdr_end;
-#endif
-
-#elif defined(_LIBUNWIND_ARM_EHABI) && defined(_LIBUNWIND_IS_BAREMETAL)
-
-// When statically linked on bare-metal, the symbols for the EH table are looked
-// up without going through the dynamic loader.
-extern char __exidx_start;
-extern char __exidx_end;
-
-#elif defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND) && defined(_WIN32)
-
-#include <windows.h>
-#include <psapi.h>
-
-#elif defined(_LIBUNWIND_USE_DL_ITERATE_PHDR) ||                               \
-      defined(_LIBUNWIND_USE_DL_UNWIND_FIND_EXIDX)
-
 #include <link.h>
-
-#endif
 
 namespace libunwind {
 
@@ -381,16 +288,16 @@ LocalAddressSpace::getEncodedP(pint_t &addr, pint_t end, uint8_t encoding,
 // provided by <link.h> on some systems (e.g., FreeBSD). On these systems the
 // data structures are just called Elf_XXX. Define ElfW() locally.
 #if !defined(ElfW)
-  #define ElfW(type) Elf_##type
+  #define ElfW(type) Elf64_##type
 #endif
 #if !defined(Elf_Half)
-  typedef ElfW(Half) Elf_Half;
+  typedef ElfW(Half) Elf64_Half;
 #endif
 #if !defined(Elf_Phdr)
-  typedef ElfW(Phdr) Elf_Phdr;
+  typedef ElfW(Phdr) Elf64_Phdr;
 #endif
 #if !defined(Elf_Addr)
-  typedef ElfW(Addr) Elf_Addr;
+  typedef ElfW(Addr) Elf64_Addr;
 #endif
 
 struct _LIBUNWIND_HIDDEN dl_iterate_cb_data {
@@ -407,7 +314,7 @@ struct _LIBUNWIND_HIDDEN dl_iterate_cb_data {
 static FrameHeaderCache TheFrameHeaderCache;
 #endif
 
-static bool checkAddrInSegment(const Elf_Phdr *phdr, size_t image_base,
+static bool checkAddrInSegment(const Elf64_Phdr *phdr, size_t image_base,
                                dl_iterate_cb_data *cbdata) {
   if (phdr->p_type == PT_LOAD) {
     uintptr_t begin = image_base + phdr->p_vaddr;
@@ -421,7 +328,7 @@ static bool checkAddrInSegment(const Elf_Phdr *phdr, size_t image_base,
   return false;
 }
 
-static bool checkForUnwindInfoSegment(const Elf_Phdr *phdr, size_t image_base,
+static bool checkForUnwindInfoSegment(const Elf64_Phdr *phdr, size_t image_base,
                                       dl_iterate_cb_data *cbdata) {
 #if defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
   if (phdr->p_type == PT_GNU_EH_FRAME) {
@@ -466,13 +373,13 @@ static int findUnwindSectionsByPhdr(struct dl_phdr_info *pinfo,
   (void)pinfo_size;
 #endif
 
-  Elf_Addr image_base = pinfo->dlpi_addr;
+  Elf64_Addr image_base = pinfo->dlpi_addr;
 
   // Most shared objects seen in this callback function likely don't contain the
   // target address, so optimize for that. Scan for a matching PT_LOAD segment
   // first and bail when it isn't found.
   bool found_text = false;
-  for (Elf_Half i = 0; i < pinfo->dlpi_phnum; ++i) {
+  for (Elf64_Half i = 0; i < pinfo->dlpi_phnum; ++i) {
     if (checkAddrInSegment(&pinfo->dlpi_phdr[i], image_base, cbdata)) {
       found_text = true;
       break;
@@ -484,8 +391,8 @@ static int findUnwindSectionsByPhdr(struct dl_phdr_info *pinfo,
   // PT_GNU_EH_FRAME and PT_ARM_EXIDX are usually near the end. Iterate
   // backward.
   bool found_unwind = false;
-  for (Elf_Half i = pinfo->dlpi_phnum; i > 0; i--) {
-    const Elf_Phdr *phdr = &pinfo->dlpi_phdr[i - 1];
+  for (Elf64_Half i = pinfo->dlpi_phnum; i > 0; i--) {
+    const Elf64_Phdr *phdr = &pinfo->dlpi_phdr[i - 1];
     if (checkForUnwindInfoSegment(phdr, image_base, cbdata)) {
       found_unwind = true;
       break;

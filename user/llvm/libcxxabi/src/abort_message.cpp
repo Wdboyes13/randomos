@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <io.h>
+#include <exit.h>
 #include "abort_message.h"
 
 #ifdef __BIONIC__

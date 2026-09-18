@@ -14,7 +14,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <mem.h>
 
 #include "DwarfParser.hpp"
 #include "Registers.hpp"

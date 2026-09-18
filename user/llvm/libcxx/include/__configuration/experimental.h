@@ -23,7 +23,7 @@
 
 // Incomplete features get their own specific disabling flags. This makes it
 // easier to grep for target specific flags once the feature is complete.
-#if defined(_LIBCPP_ENABLE_EXPERIMENTAL) || defined(_LIBCPP_BUILDING_LIBRARY)
+#if defined(_LIBCPP_ENABLE_EXPERIMENTAL) //|| defined(_LIBCPP_BUILDING_LIBRARY)
 #  define _LIBCPP_HAS_EXPERIMENTAL_LIBRARY 1
 #else
 #  define _LIBCPP_HAS_EXPERIMENTAL_LIBRARY 0

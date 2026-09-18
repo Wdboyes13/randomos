@@ -16,9 +16,12 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <stdlib.h>
+#include <mem.h>
 
 #include <__libunwind_config.h>
+
+#define _LIBUNWIND_USE_DLADDR 0
+#define _LIBUNWIND_HAS_NO_THREADS
 
 // Platform specific configuration defines.
 #ifdef __APPLE__

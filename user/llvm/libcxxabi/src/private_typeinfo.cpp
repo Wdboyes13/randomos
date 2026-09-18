@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "private_typeinfo.h"
+#include <str.h>
 
 // The flag _LIBCXXABI_FORGIVING_DYNAMIC_CAST is used to make dynamic_cast
 // more forgiving when type_info's mistakenly have hidden visibility and

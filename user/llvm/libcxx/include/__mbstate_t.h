@@ -35,7 +35,9 @@
 #  define __CORRECT_ISO_CPP_WCHAR_H_PROTO
 #endif
 
-#if _LIBCPP_HAS_MUSL_LIBC
+typedef struct {} mbstate_t;
+
+/*#if _LIBCPP_HAS_MUSL_LIBC
 #  define __NEED_mbstate_t
 #  include <bits/alltypes.h>
 #  undef __NEED_mbstate_t
@@ -53,6 +55,6 @@
 #  include_next <uchar.h> // Try <uchar.h> in absence of <wchar.h> for mbstate_t
 #else
 #  error "We don't know how to get the definition of mbstate_t on your platform."
-#endif
+#endif*/
 
 #endif // _LIBCPP___MBSTATE_T_H

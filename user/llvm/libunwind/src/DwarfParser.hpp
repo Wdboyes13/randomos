@@ -15,7 +15,9 @@
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <mem.h>
+#include <io.h>
+#include <str.h>
 
 #include "libunwind.h"
 #include "dwarf2.h"

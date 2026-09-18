@@ -88,6 +88,9 @@ typedef struct {
 #define PT_SHLIB 5
 #define PT_PHDR 6
 #define PT_TLS 	7
+#define PT_GNU_EH_FRAME 0x6474e550
+#define PT_GNU_STACK 0x6474e551
+#define PT_GNU_RELRO 0x6474e552
 
 #define PF_X 0x1
 #define PF_W 0x2

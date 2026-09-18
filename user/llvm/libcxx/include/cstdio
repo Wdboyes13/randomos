@@ -102,14 +102,15 @@ void perror(const char* s);
 #  include <__cstddef/size_t.h>
 
 #  include <stdio.h>
+#include <io.h>
 
-#  ifndef _LIBCPP_STDIO_H
+/*#  ifndef _LIBCPP_STDIO_H
 #   error <cstdio> tried including <stdio.h> but didn't find libc++'s <stdio.h> header. \
           This usually means that your header search paths are not configured properly. \
           The header search paths should contain the C++ Standard Library headers before \
           any C Standard Library, and you are probably using compiler flags that make that \
           not be the case.
-#  endif
+#  endif*/
 
 #  if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
 #    pragma GCC system_header

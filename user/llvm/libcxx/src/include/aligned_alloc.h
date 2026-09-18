@@ -27,7 +27,7 @@ _LIBCPP_BEGIN_NAMESPACE_STD
 //
 // Returns the allocated memory, or `nullptr` on failure.
 inline _LIBCPP_HIDE_FROM_ABI void* __libcpp_aligned_alloc(std::size_t __alignment, std::size_t __size) {
-#  ifdef _WIN32
+/*#  ifdef _WIN32
   return ::_aligned_malloc(__size, __alignment);
 
 // Android only provides aligned_alloc when targeting API 28 or higher.
@@ -47,7 +47,9 @@ inline _LIBCPP_HIDE_FROM_ABI void* __libcpp_aligned_alloc(std::size_t __alignmen
   (void)::posix_memalign(&__result, __alignment, __size);
   // If posix_memalign fails, __result is unmodified so we still return `nullptr`.
   return __result;
-#  endif
+#  endif*/
+    // we aren't gonna bother aligning for now
+    return ::malloc(__size);
 }
 
 inline _LIBCPP_HIDE_FROM_ABI void __libcpp_aligned_free(void* __ptr) {

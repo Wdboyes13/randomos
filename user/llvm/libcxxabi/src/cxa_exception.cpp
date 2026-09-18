@@ -13,7 +13,7 @@
 #include "cxxabi.h"
 
 #include <exception>        // for std::terminate
-#include <string.h>         // for memset
+#include <str.h>         // for memset
 #include "cxa_exception.h"
 #include "cxa_handlers.h"
 #include "fallback_malloc.h"

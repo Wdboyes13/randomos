@@ -13,6 +13,8 @@
 #ifndef __RWMUTEX_HPP__
 #define __RWMUTEX_HPP__
 
+#include "config.h"
+
 #if defined(_WIN32)
 #include <windows.h>
 #elif !defined(_LIBUNWIND_HAS_NO_THREADS)

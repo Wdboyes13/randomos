@@ -71,7 +71,7 @@ namespace {
   // True if the destructors are currently scheduled to run on this thread
   __thread bool dtors_alive = false;
   // Used to trigger destructors on thread exit; value is ignored
-  std::__libcpp_tls_key dtors_key;
+  //std::__libcpp_tls_key dtors_key;
 
   void run_dtors(void*) {
     while (auto head = dtors) {
@@ -88,9 +88,9 @@ namespace {
       // There is intentionally no matching std::__libcpp_tls_delete call, as
       // __cxa_thread_atexit() may be called arbitrarily late (for example, from
       // global destructors or atexit() handlers).
-      if (std::__libcpp_tls_create(&dtors_key, run_dtors) != 0) {
-        __abort_message("std::__libcpp_tls_create() failed in __cxa_thread_atexit()");
-      }
+      //if (std::__libcpp_tls_create(&dtors_key, run_dtors) != 0) {
+      //  __abort_message("std::__libcpp_tls_create() failed in __cxa_thread_atexit()");
+      //}
     }
 
     ~DtorsManager() {

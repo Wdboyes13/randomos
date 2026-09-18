@@ -1,11 +1,36 @@
 #include "ldso.h"
 #include "sys/elf.h"
 #include "sys/types.h"
+#include <link.h>
 
 HIDDEN object_t objects[MAXOBJS];
 HIDDEN usize nloaded = 0;
 HIDDEN u64 lodbase = 0;
 HIDDEN object_t* exeobj = NULL;
+static u64 adds = 0;
+
+int dl_iterate_phdr(int (*callback)(struct dl_phdr_info *, usize, void *), void *data) {
+    for (usize i = 0; i < nloaded; i++) {
+        object_t* o = &objects[i];
+        struct dl_phdr_info info = {
+            .dlpi_addr = o->base,
+            .dlpi_name = o->name,
+            .dlpi_phdr = o->phdrs,
+            .dlpi_phnum = o->nphdrs,
+            .dlpi_adds = adds,
+            .dlpi_subs = 0,
+            .dlpi_tls_modid = 0,
+            .dlpi_tls_data = NULL
+        };
+
+        int x = 0;
+        if ((x = callback(&info, sizeof(info), data)) != 0) {
+            return x;
+        }
+    }
+
+    return 0;
+}
 
 // exe only
 HIDDEN void run_preinits(object_t* obj) {
@@ -204,6 +229,7 @@ HIDDEN object_t* parse_object(u64 ldbase, u64 dynbase, const char* name) {
 
     obj->got[1] = (u64)obj;
     obj->got[2] = (u64)ldso_resolve;
+    adds++;
     return obj;
 }
 
@@ -268,6 +294,7 @@ HIDDEN object_t* load_library(const char* path, usize lodbase, usize* ldsz) {
     Elf64_Phdr phdrs[ehdr.e_phnum];
 
     usize ldhigh = 0;
+    u64 phdr_vaddr = 0;
     for (int i = 0; i < ehdr.e_phnum; i++) {
         ssize nread = ldso_read(fd, &phdrs[i], sizeof(Elf64_Phdr));
         if (nread < 0 || (usize)nread != sizeof(Elf64_Phdr)) {
@@ -322,11 +349,15 @@ HIDDEN object_t* load_library(const char* path, usize lodbase, usize* ldsz) {
             }
         } else if (phdrs[i].p_type == PT_DYNAMIC) {
             dynbase = lodbase + phdrs[i].p_vaddr;
+        } else if (phdrs[i].p_type == PT_PHDR) {
+            phdr_vaddr = lodbase + phdrs[i].p_vaddr;
         }
     }
 
     if (ldsz) *ldsz = ldhigh - lodbase;
-    return parse_object(lodbase, dynbase, path);
+    object_t* obj = parse_object(lodbase, dynbase, path);
+    obj->phdrs = (Elf64_Phdr*)phdr_vaddr;
+    obj->nphdrs = ehdr.e_phnum;
 }
 
 HIDDEN void ldso_main(u64 ldso_base, u64 argc, char** argv, char** envp, Elf64_Auxv* auxv) {
@@ -378,8 +409,10 @@ HIDDEN void ldso_main(u64 ldso_base, u64 argc, char** argv, char** envp, Elf64_A
     lodbase = (load_high + 0xFFF) & ~0xFFFULL;
 
     u64 exebase = (u64)phdrs - phdr_vaddr;
-    object_t* exeobj = parse_object(exebase, exebase + phdrs[dynidx].p_vaddr, "main");
+    exeobj = parse_object(exebase, exebase + phdrs[dynidx].p_vaddr, "main");
     __atmmaplow_vaddr = lodbase;
+    exeobj->phdrs = (Elf64_Phdr*)phdr_vaddr;
+    exeobj->nphdrs = phnum;
 
     run_preinits(exeobj);
     run_inits(exeobj);

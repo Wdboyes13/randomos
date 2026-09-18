@@ -1,0 +1,16 @@
+changes:
+    - adjusted some headers and definitions
+      to be compatible
+removed:
+    - .clang-*
+    - test
+    - docs
+    - sjlj stuff
+    - EHABI stuff
+    - wasm stuff
+    - AIX stuff
+    - include/mach-o
+    - win32 stuff
+    - apple stuff
+    - pac stuff
+    - SEH stuff

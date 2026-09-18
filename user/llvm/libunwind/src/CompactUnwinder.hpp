@@ -14,7 +14,7 @@
 
 #include <inttypes.h>
 #include <stdint.h>
-#include <stdlib.h>
+#include <mem.h>
 
 #include <libunwind.h>
 #include <mach-o/compact_unwind_encoding.h>

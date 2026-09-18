@@ -12,8 +12,9 @@
 //===----------------------------------------------------------------------===//
 
 #include <assert.h>
-#include <stdlib.h>
-#include <string.h>
+#include <mem.h>
+#include <exit.h>
+#include <str.h>
 #include <typeinfo>
 
 #include "__cxxabi_config.h"

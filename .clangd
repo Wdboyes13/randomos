@@ -13,7 +13,10 @@ CompileFlags:
         - -Wextra
         - -I/Users/william/dev/work/coding/randomos/user/toolchain/libc/include
         - -I/Users/william/dev/work/coding/randomos/include
-        - -xc
+        - -I/Users/william/dev/work/coding/randomos/user/llvm/libunwind/include
+        - -I/Users/william/dev/work/coding/randomos/user/llvm/libcxx/include
+        - -I/Users/william/dev/work/coding/randomos/user/llvm/libcxxabi/include
+        - -I/Users/william/dev/work/coding/randomos/user/llvm/libcxx/src
 
 Index:
     Background: Skip

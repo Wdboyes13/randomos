@@ -13,28 +13,19 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <mem.h>
+#include <str.h>
+#include <io.h>
+#include <exit.h>
 
 #include "config.h"
 #include "libunwind_ext.h"
 #include "libunwind.h"
-#include "Unwind-EHABI.h"
 #include "unwind.h"
-
-#if defined(_AIX)
-#include <sys/debug.h>
-#endif
 
 #if defined(_LIBUNWIND_BUILD_ZERO_COST_APIS)
 
-#if defined(_LIBUNWIND_SUPPORT_SEH_UNWIND)
-#define PRIVATE_1 private_[0]
-#elif defined(_LIBUNWIND_ARM_EHABI)
-#define PRIVATE_1 unwinder_cache.reserved1
-#else
 #define PRIVATE_1 private_1
-#endif
 
 ///  Called by __cxa_rethrow().
 _LIBUNWIND_EXPORT _Unwind_Reason_Code

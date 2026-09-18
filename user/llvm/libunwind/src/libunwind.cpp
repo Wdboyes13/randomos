@@ -14,7 +14,8 @@
 #include "config.h"
 #include "libunwind_ext.h"
 
-#include <stdlib.h>
+#include <mem.h>
+#include <io.h>
 
 // Define the __has_feature extension for compilers that do not support it so
 // that we can later check for the presence of ASan in a compiler-neutral way.
@@ -529,7 +530,8 @@ int __unw_remove_find_dynamic_unwind_sections(
 
 // Add logging hooks in Debug builds only
 #ifndef NDEBUG
-#include <stdlib.h>
+#include <mem.h>
+#include <env.h>
 
 _LIBUNWIND_HIDDEN
 bool logAPIs() {
@@ -537,7 +539,7 @@ bool logAPIs() {
   static bool checked = false;
   static bool log = false;
   if (!checked) {
-    log = (getenv("LIBUNWIND_PRINT_APIS") != NULL);
+    log = (getenv((char*)"LIBUNWIND_PRINT_APIS") != NULL);
     checked = true;
   }
   return log;
@@ -549,7 +551,7 @@ bool logUnwinding() {
   static bool checked = false;
   static bool log = false;
   if (!checked) {
-    log = (getenv("LIBUNWIND_PRINT_UNWINDING") != NULL);
+    log = (getenv((char*)"LIBUNWIND_PRINT_UNWINDING") != NULL);
     checked = true;
   }
   return log;
@@ -561,7 +563,7 @@ bool logDWARF() {
   static bool checked = false;
   static bool log = false;
   if (!checked) {
-    log = (getenv("LIBUNWIND_PRINT_DWARF") != NULL);
+    log = (getenv((char*)"LIBUNWIND_PRINT_DWARF") != NULL);
     checked = true;
   }
   return log;

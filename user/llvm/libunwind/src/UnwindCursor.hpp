@@ -14,7 +14,7 @@
 #include "shadow_stack_unwind.h"
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <mem.h>
 #include <unwind.h>
 
 #ifdef _WIN32
@@ -57,60 +57,6 @@
 #include "libunwind_ext.h"
 #include "Registers.hpp"
 #include "RWMutex.hpp"
-#include "Unwind-EHABI.h"
-
-#if defined(_LIBUNWIND_SUPPORT_SEH_UNWIND)
-// Provide a definition for the DISPATCHER_CONTEXT struct for old (Win7 and
-// earlier) SDKs.
-// MinGW-w64 has always provided this struct.
-  #if defined(_WIN32) && defined(_LIBUNWIND_TARGET_X86_64) && \
-      !defined(__MINGW32__) && VER_PRODUCTBUILD < 8000
-struct _DISPATCHER_CONTEXT {
-  ULONG64 ControlPc;
-  ULONG64 ImageBase;
-  PRUNTIME_FUNCTION FunctionEntry;
-  ULONG64 EstablisherFrame;
-  ULONG64 TargetIp;
-  PCONTEXT ContextRecord;
-  PEXCEPTION_ROUTINE LanguageHandler;
-  PVOID HandlerData;
-  PUNWIND_HISTORY_TABLE HistoryTable;
-  ULONG ScopeIndex;
-  ULONG Fill0;
-};
-  #endif
-
-struct UNWIND_INFO {
-  uint8_t Version : 3;
-  uint8_t Flags : 5;
-  uint8_t SizeOfProlog;
-  uint8_t CountOfCodes;
-  uint8_t FrameRegister : 4;
-  uint8_t FrameOffset : 4;
-  uint16_t UnwindCodes[2];
-};
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wgnu-anonymous-struct"
-union UNWIND_INFO_ARM {
-  DWORD HeaderData;
-  struct {
-    DWORD FunctionLength : 18;
-    DWORD Version : 2;
-    DWORD ExceptionDataPresent : 1;
-    DWORD EpilogInHeader : 1;
-    DWORD FunctionFragment : 1;
-    DWORD EpilogCount : 5;
-    DWORD CodeWords : 4;
-  };
-};
-#pragma clang diagnostic pop
-
-extern "C" _Unwind_Reason_Code __libunwind_seh_personality(
-    int, _Unwind_Action, uint64_t, _Unwind_Exception *,
-    struct _Unwind_Context *);
-
-#endif
 
 namespace libunwind {
 

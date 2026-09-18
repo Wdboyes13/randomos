@@ -18,12 +18,14 @@
 // to export these functions from libunwind.so as well.
 #define _LIBUNWIND_UNWIND_LEVEL1_EXTERNAL_LINKAGE 1
 
-#include <inttypes.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <stdlib.h>
+#include <mem.h>
 #include <stdio.h>
-#include <string.h>
+#include <io.h>
+#include <str.h>
+#include <inttypes.h>
+#include <exit.h>
 
 #include "config.h"
 #include "libunwind.h"

@@ -50,6 +50,9 @@ struct ObjectT {
     u64 base;
     Elf64_Dyn* dynbase;
 
+    Elf64_Phdr* phdrs;
+    usize nphdrs;
+
     Elf64_Sym* dynsym;
     usize dynsymentsz;
 

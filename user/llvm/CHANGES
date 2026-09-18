@@ -1,4 +1,4 @@
-removed
+removed:
     - git repo folder
     - .clang-*
     - .git-*
@@ -38,11 +38,8 @@ removed
     - libcxx/modules
     - libcxxabi/www
     - libcxxabi/test
-    - libunwind/test
-    - libunwind/docs
     - libcxx/.clang-*
     - libcxxabi/.clang-*
-    - libunwind/.clang-*
     - libcxx/TODO.txt
     
 changes to be made:
@@ -50,3 +47,8 @@ changes to be made:
     - porting of libcxxabi/
     - porting of libunwind/
     - switching cmake to makefile
+
+also see:
+    - libunwind/CHANGES
+    - libcxxabi/CHANGES
+    - libcxx/CHANGES

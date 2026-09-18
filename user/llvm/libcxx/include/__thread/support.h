@@ -11,10 +11,33 @@
 #define _LIBCPP___THREAD_SUPPORT_H
 
 #include <__config>
+#include <lock.h>
 
 #ifndef _LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER
 #  pragma GCC system_header
 #endif
+
+namespace std {
+using __libcpp_mutex_t = lock_t;
+#define _LIBCPP_MUTEX_INITIALIZER {0}
+
+_LIBCPP_NO_THREAD_SAFETY_ANALYSIS static int __libcpp_mutex_lock(__libcpp_mutex_t* lk) {
+    lock_acquire(lk);
+    return 0;
+}
+
+_LIBCPP_NO_THREAD_SAFETY_ANALYSIS static bool __libcpp_mutex_trylock(__libcpp_mutex_t* lk) {
+    lock_acquire(lk);
+    return 1;
+}
+
+_LIBCPP_NO_THREAD_SAFETY_ANALYSIS static int __libcpp_mutex_unlock(__libcpp_mutex_t* lk) {
+    lock_release(lk);
+    return 0;
+}
+
+static int __libcpp_mutex_destroy(__libcpp_mutex_t*) {}
+}
 
 /*
 

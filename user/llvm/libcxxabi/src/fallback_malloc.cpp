@@ -18,8 +18,8 @@
 
 #include "include/aligned_alloc.h" // from libc++
 #include <__assert>
-#include <stdlib.h> // for malloc, calloc, free
-#include <string.h> // for memset
+#include <mem.h> // for malloc, calloc, free
+#include <str.h> // for memset
 
 //  A small, simple heap manager based (loosely) on
 //  the startup heap manager from FreeBSD, optimized for space.
@@ -35,12 +35,12 @@ namespace {
 
 // When POSIX threads are not available, make the mutex operations a nop
 #ifndef _LIBCXXABI_HAS_NO_THREADS
-static constinit std::__libcpp_mutex_t heap_mutex = _LIBCPP_MUTEX_INITIALIZER;
+//static constinit std::__libcpp_mutex_t heap_mutex = _LIBCPP_MUTEX_INITIALIZER;
 #else
 static constinit void* heap_mutex = 0;
 #endif
 
-class mutexor {
+/*class mutexor {
 public:
 #ifndef _LIBCXXABI_HAS_NO_THREADS
   mutexor(std::__libcpp_mutex_t* m) : mtx_(m) {
@@ -57,7 +57,7 @@ private:
 #ifndef _LIBCXXABI_HAS_NO_THREADS
   std::__libcpp_mutex_t* mtx_;
 #endif
-};
+};*/
 
 static const size_t HEAP_SIZE = 512;
 char heap[HEAP_SIZE] __attribute__((aligned));
@@ -132,7 +132,7 @@ bool is_fallback_ptr(void* ptr) {
 void* fallback_malloc(size_t len) {
   heap_node *p, *prev;
   const size_t nelems = alloc_size(len);
-  mutexor mtx(&heap_mutex);
+  //mutexor mtx(&heap_mutex);
 
   if (NULL == freelist)
     init_heap();
@@ -191,7 +191,7 @@ void fallback_free(void* ptr) {
   struct heap_node* cp = ((struct heap_node*)ptr) - 1; // retrieve the chunk
   struct heap_node *p, *prev;
 
-  mutexor mtx(&heap_mutex);
+  //mutexor mtx(&heap_mutex);
 
 #ifdef DEBUG_FALLBACK_MALLOC
   std::printf("Freeing item at %d of size %d\n", offset_from_node(cp), cp->len);

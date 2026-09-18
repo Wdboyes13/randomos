@@ -89,6 +89,7 @@
 // To enforce this either `BUILDING_CXA_GUARD` or `TESTING_CXA_GUARD` must be
 // defined when including this file. Only `src/cxa_guard.cpp` should define
 // the former.
+
 #ifdef BUILDING_CXA_GUARD
 #  include "abort_message.h"
 #  define ABORT_WITH_MESSAGE(...) ::__abort_message(__VA_ARGS__)

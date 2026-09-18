@@ -1,3 +1,0 @@
-changes:
-    - moved vendor/llvm/default_assertion_handler.in to include/__assertion_handler
-    - made many changes for randomos support

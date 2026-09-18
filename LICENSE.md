@@ -74,14 +74,10 @@ From https://github.com/uACPI/uACPI
 Copyright (c) 2022-2026 Daniil Tatianin  
 uACPI is licensed under the MIT license at [vendor/uACPI/LICENSE](/vendor/uACPI/LICENSE)  
 
-## LLVM  
-From https://github.com/llvm/llvm-project  
-Copyright (c) 2019-2026 The LLVM Project Contributors  
-Copyright (c) 2003-2019 University of Illinois at Urbana-Champaign. All rights reserved.  
-
-LLVM is licensed under the Apache 2.0 license with LLVM exceptions, and partially under the Legacy LLVM License. Both are at [user/llvm/LICENSE.TXT](/user/llvm/LICENSE.TXT)  
-
-List of changes are at [user/llvm/CHANGES](/user/llvm/CHANGES)  
+## Paragon Portable STL
+From https://github.com/Paragon-Software-Group/paragon_portable_stl  
+Copyright (c) 2024-2025 Paragon Software Group  
+Paragon Portable STL is licensed under the MIT license at [user/toolchain/pstl/LICENSE.txt](/user/toolchain/pstl/LICENSE.txt)  
 
 ## This project (full license)
 MIT License  

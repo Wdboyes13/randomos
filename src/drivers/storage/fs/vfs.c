@@ -627,7 +627,6 @@ int vfs_baseunlink(vfs_t* mnt, u64 ino, const char* path) {
         if ((ret = mnt->ops->rmlink(mnt, dino, base)) < 0) return ret;
         if ((ret = mnt->ops->rmino(mnt, ino)) < 0) return ret;
     }
-
     return 0;
 }
 
@@ -1078,6 +1077,7 @@ int stat(const char* path, struct stat* st) {
 int unlink(const char* path) {
     int ret = 0;
     char abs[1024];
+
     if ((ret = vfs_abspath(path, abs, 1024)) < 0) return ret;
 
     vfs_t* mnt = vfs_getmnt(abs);

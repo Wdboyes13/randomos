@@ -358,6 +358,8 @@ HIDDEN object_t* load_library(const char* path, usize lodbase, usize* ldsz) {
     object_t* obj = parse_object(lodbase, dynbase, path);
     obj->phdrs = (Elf64_Phdr*)phdr_vaddr;
     obj->nphdrs = ehdr.e_phnum;
+
+    return obj;
 }
 
 HIDDEN void ldso_main(u64 ldso_base, u64 argc, char** argv, char** envp, Elf64_Auxv* auxv) {

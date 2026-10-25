@@ -84,7 +84,8 @@ src/bcrypt/%.o: src/bcrypt/%.c
 %.o: %.asm
 	$(AS) $(ASFLAGS) $< -o $@
 clean:
-	rm -f $(LIBC) $(CRT) $(LIBOBJ) $(ASMOBJ) $(DEPS) $(LIBC_SO) $(ALL_SOFILE_OBJS) $(LDSO) $(LDSO_OBJ)
+	rm -f $(LIBC) $(CRT) $(LIBOBJ) $(ASMOBJ) $(DEPS) \
+		  $(LIBC_SO) $(ALL_SOFILE_OBJS) $(LDSO) $(LDSO_OBJ)
 
 .PHONY: all copy clean
 .SECONDARY: $(ALL_SOFILE_OBJS) $(ALL_LIB_OBJS)

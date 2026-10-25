@@ -40,7 +40,7 @@ static u32 findfreeino(vfs_t* vfs) {
     return ino;
 }
 
-static ramfs_inode* getinod(vfs_t* vfs, u32 ino) {
+/*static ramfs_inode* getinod(vfs_t* vfs, u32 ino) {
     ramfs_info* fs = RAMFS(vfs);
     if (ino >= fs->ninodes) {
         return NULL;
@@ -51,6 +51,20 @@ static ramfs_inode* getinod(vfs_t* vfs, u32 ino) {
     } else {
         return NULL;
     }
+}*/
+
+static ramfs_inode* getinod(vfs_t* vfs, u32 ino) {
+    ramfs_info* fs = RAMFS(vfs);
+    if (ino == 0 || ino > fs->ninodes) {
+        return NULL;
+    }
+
+    ramfs_inode* inode = &fs->inodtbl[ino - 1];
+    if (inode->used) {
+        return inode;
+    }
+
+    return NULL;
 }
 
 ssize ramfs_umount(vfs_t* vfs) {
@@ -157,9 +171,11 @@ ssize ramfs_rmlink(vfs_t* vfs, u32 dino, const char* name) {
     for (usize i = 0; i < ndirs; i++) {
         if (dir[i].used && dir[i].namlen == namlen && strneq(dir[i].namep, name, namlen)) {
             free(dir[i].namep);
+            dir[i].namep = NULL;
             dir[i].namlen = 0;
             dir[i].inode = 0;
             dir[i].used = 0;
+            return 0;
         }
     }
 

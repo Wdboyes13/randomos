@@ -93,17 +93,17 @@ HIDDEN void ldso_start(void* rsp) {
         0,
         0,
         0,
-        NULL,
-        NULL,
+        (u64)NULL,
+        (u64)NULL,
         NULL,
 
         NULL,
         0,
         NULL,
-        NULL,
+        (u64)NULL,
         0,
         NULL,
-        NULL,
+        (u64)NULL,
         0
     };
 

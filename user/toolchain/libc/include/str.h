@@ -19,6 +19,7 @@ char* strtok(char* str, const char* delim);
 
 int strtoi(char* ptr, char** eptr);
 unsigned long strtoul(const char *nptr, char **endptr, int base);
+double strtod(const char *nptr, char **endptr);
 usize strcspn(const char* s, const char* rj);
 char* strcat(char* dest, const char* src);
 

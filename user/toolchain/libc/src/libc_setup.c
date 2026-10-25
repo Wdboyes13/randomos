@@ -17,6 +17,8 @@ void __libc_finienviron();
 void __libc_finistdio();
 void __libc_finiatexit();
 
+const void *const __dso_handle;
+
 u64 getauxval(u64 type);
 void __ldso_ldcleanup();
 

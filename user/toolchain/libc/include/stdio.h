@@ -60,3 +60,5 @@ int remove(const char* path);
 int ungetc(int c, FILE* stream);
 int fileno(FILE* f);
 void puts(const char* s);
+int bscanf(const char* buffer, const char* format, ...) __attribute__((format(scanf, 2, 3)));
+int sscanf(const char* buf, const char* fmt, ...) __attribute__((format(scanf, 2, 3)));

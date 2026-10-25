@@ -1,6 +1,8 @@
 #include <str.h>
 #include <stddef.h>
 #include <mem.h>
+#include <math.h>
+#include <ctype.h>
 
 usize strlen(const char* str) {
     const char* orig = str;
@@ -103,7 +105,7 @@ char* strchr(const char* str, char c) {
 
 char* strdup(char* str) {
     usize len = strlen(str);
-    char* mem = malloc(len + 1);
+    char* mem = (char*)malloc(len + 1);
     if (!mem) return NULL;
     memcpy(mem, str, len + 1);
     return mem;
@@ -173,7 +175,7 @@ void* memmove(void* dst, const void* src, usize n) {
 }
 
 void* memchr(const void* ptr, int c, usize n) {
-    const unsigned char* p = ptr;
+    const unsigned char* p = (unsigned char*)ptr;
     unsigned char ch = (unsigned char)c;
 
     for (usize i = 0; i < n; i++) {
@@ -292,4 +294,75 @@ usize strnlen(const char *s, usize maxlen) {
     usize i;
     for (i = 0; i < maxlen && s[i]; i++);
     return i;
+}
+
+double strtod(const char *nptr, char **endptr) {
+    const char *p = nptr;
+    double value = 0.0;
+    int sign = 1;
+    int exp_sign = 1;
+    long exponent = 0;
+    int has_digits = 0;
+
+    while (isspace((unsigned char)*p)) {
+        p++;
+    }
+
+    if (*p == '-') {
+        sign = -1;
+        p++;
+    } else if (*p == '+') {
+        p++;
+    }
+
+
+    double fraction = 0.1;
+    while (isdigit((unsigned char)*p)) {
+        value = value * 10.0 + (*p - '0');
+        has_digits = 1;
+        p++;
+    }
+
+    if (*p == '.') {
+        p++;
+        while (isdigit((unsigned char)*p)) {
+            value += (*p - '0') * fraction;
+            fraction *= 0.1;
+            has_digits = 1;
+            p++;
+        }
+    }
+    if (!has_digits) {
+        if (endptr) {
+            *endptr = (char *)nptr;
+        }
+        return 0.0;
+    }
+
+    if (*p == 'e' || *p == 'E') {
+        p++;
+        if (*p == '-') {
+            exp_sign = -1;
+            p++;
+        } else if (*p == '+') {
+            p++;
+        }
+
+        long exp_val = 0;
+        while (isdigit((unsigned char)*p)) {
+            exp_val = exp_val * 10 + (*p - '0');
+            p++;
+        }
+        exponent += exp_sign * exp_val;
+    }
+
+    if (exponent != 0) {
+        value *= pow(10.0, (double)exponent);
+    }
+
+    if (endptr) {
+        *endptr = (char *)p;
+    }
+
+    return sign * value;
 }

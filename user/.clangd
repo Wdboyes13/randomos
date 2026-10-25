@@ -1,0 +1,6 @@
+CompileFlags:
+    Add:
+        - -I/Users/william/dev/work/coding/randomos/user/toolchain/libc/include
+        - -I/Users/william/dev/work/coding/randomos/user/toolchain/cxx/libcxxabi/include
+        - -I/Users/william/dev/work/coding/randomos/user/toolchain/cxx/uClibc++/include
+        - -std=c++23

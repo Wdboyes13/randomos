@@ -74,10 +74,10 @@ From https://github.com/uACPI/uACPI
 Copyright (c) 2022-2026 Daniil Tatianin  
 uACPI is licensed under the MIT license at [vendor/uACPI/LICENSE](/vendor/uACPI/LICENSE)  
 
-## Paragon Portable STL
-From https://github.com/Paragon-Software-Group/paragon_portable_stl  
-Copyright (c) 2024-2025 Paragon Software Group  
-Paragon Portable STL is licensed under the MIT license at [user/toolchain/pstl/LICENSE.txt](/user/toolchain/pstl/LICENSE.txt)  
+## bscanf
+From https://github.com/tusharjois/bscanf  
+Copyright (c) 2019 Tushar Jois  
+bscanf is licensed under the MIT license at [user/toolchain/libc/src/bscanf/LICENSE](/user/toolchain/libc/src/bscanf/LICENSE)  
 
 ## This project (full license)
 MIT License  

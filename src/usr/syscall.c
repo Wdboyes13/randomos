@@ -2,6 +2,7 @@
 #include <core/std.h>
 #include <core/mem/vmm.h>
 #include <core/asmh.h>
+#include <core/kprint.h>
 #include <lib/loader.h>
 #include <lib/syscall.h>
 #include <lib/string.h>
@@ -97,6 +98,10 @@ bool syscall_c(struct sysregs* args) {
     page_table_t* uasp = vmm_cpml4v();
     struct sysregs svargs;
     memcpy(&svargs, args, sizeof(*args));
+
+    if (args->num == SYS_UNLINK) {
+        kprint("syscall: dispatching SYS_UNLINK\n");
+    }
 
     if (args->num >= (sizeof(syscall_tbl)/sizeof(syscall_hdlr_t)) ||
         !syscall_tbl[args->num]) {

@@ -612,21 +612,42 @@ ssize vfs_getdino(vfs_t* mnt, const char* path) {
 int vfs_baseunlink(vfs_t* mnt, u64 ino, const char* path) {
     int ret = 0;
 
+    kprint("vfs_baseunlink: entered for %s\n", path);
+
     ssize dino = 0;
-    if ((dino = vfs_getdino(mnt, path)) < 0) return dino;
+    if ((dino = vfs_getdino(mnt, path)) < 0) {
+        kprint("vfs_baseunlink: resolving parent failed (%ld)\n", dino);
+        return dino;
+    }
 
     char base[1024];
-    if ((ret = vfs_basename(path, base, sizeof(base))) < 0) return ret;
+    if ((ret = vfs_basename(path, base, sizeof(base))) < 0) {
+        kprint("vfs_baseunlink: extracting basename failed (%d)\n", ret);
+        return ret;
+    }
 
     vinode_t inod;
-    if ((ret = mnt->ops->getino(mnt, ino, &inod)) < 0) return ret;
+    if ((ret = mnt->ops->getino(mnt, ino, &inod)) < 0) {
+        kprint("vfs_baseunlink: reading inode failed (%d)\n", ret);
+        return ret;
+    }
 
     if (inod.lnkcnt > 1) {
-        if ((ret = mnt->ops->rmlink(mnt, dino, base)) < 0) return ret;
+        if ((ret = mnt->ops->rmlink(mnt, dino, base)) < 0) {
+            kprint("vfs_baseunlink: removing directory entry failed (%d)\n", ret);
+            return ret;
+        }
     } else {
-        if ((ret = mnt->ops->rmlink(mnt, dino, base)) < 0) return ret;
-        if ((ret = mnt->ops->rmino(mnt, ino)) < 0) return ret;
+        if ((ret = mnt->ops->rmlink(mnt, dino, base)) < 0) {
+            kprint("vfs_baseunlink: removing directory entry failed (%d)\n", ret);
+            return ret;
+        }
+        if ((ret = mnt->ops->rmino(mnt, ino)) < 0) {
+            kprint("vfs_baseunlink: removing inode failed (%d)\n", ret);
+            return ret;
+        }
     }
+    kprint("vfs_baseunlink: completed\n");
     return 0;
 }
 
@@ -1078,21 +1099,40 @@ int unlink(const char* path) {
     int ret = 0;
     char abs[1024];
 
-    if ((ret = vfs_abspath(path, abs, 1024)) < 0) return ret;
+    kprint("vfs unlink: entered for %s\n", path);
+
+    if ((ret = vfs_abspath(path, abs, 1024)) < 0) {
+        kprint("vfs unlink: making path absolute failed (%d)\n", ret);
+        return ret;
+    }
 
     vfs_t* mnt = vfs_getmnt(abs);
+    if (!mnt) {
+        kprint("vfs unlink: no mount for %s\n", abs);
+        return -EINVAL;
+    }
 
     ssize ino = 0;
-    if ((ret = vfs_resolve(mnt, abs, VFS_FOLLOW_FINAL)) < 0) return ret;
+    if ((ino = vfs_resolve(mnt, abs, VFS_FOLLOW_FINAL)) < 0) {
+        kprint("vfs unlink: resolving path failed (%ld)\n", (ssize)ino);
+        return ino;
+    }
 
     vinode_t inod;
-    if ((ret = mnt->ops->getino(mnt, ino, &inod)) < 0) return ret;
+    if ((ret = mnt->ops->getino(mnt, ino, &inod)) < 0) {
+        kprint("vfs unlink: reading inode failed (%d)\n", ret);
+        return ret;
+    }
 
     if (S_TYPE(inod.mode) == S_IFDIR) {
+        kprint("vfs unlink: refusing to remove a directory\n");
         return -EISDIR;
     }
 
-    return vfs_baseunlink(mnt, ino, abs);
+    kprint("vfs unlink: calling vfs_baseunlink for %s\n", abs);
+    ret = vfs_baseunlink(mnt, ino, abs);
+    kprint("vfs unlink: vfs_baseunlink returned %d\n", ret);
+    return ret;
 }
 
 int rmdir(const char* path) {
@@ -1103,7 +1143,7 @@ int rmdir(const char* path) {
     vfs_t* mnt = vfs_getmnt(abs);
 
     ssize ino = 0;
-    if ((ret = vfs_resolve(mnt, abs, VFS_FOLLOW_FINAL | VFS_MUST_BE_DIR)) < 0) return ret;
+    if ((ino = vfs_resolve(mnt, abs, VFS_FOLLOW_FINAL | VFS_MUST_BE_DIR)) < 0) return ino;
 
     vinode_t inod;
     u64 pos = 0;

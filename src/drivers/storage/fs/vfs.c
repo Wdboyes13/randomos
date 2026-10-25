@@ -1113,9 +1113,9 @@ int unlink(const char* path) {
     }
 
     ssize ino = 0;
-    if ((ret = vfs_resolve(mnt, abs, VFS_FOLLOW_FINAL)) < 0) {
-        kprint("vfs unlink: resolving path failed (%ld)\n", (ssize)ret);
-        return ret;
+    if ((ino = vfs_resolve(mnt, abs, VFS_FOLLOW_FINAL)) < 0) {
+        kprint("vfs unlink: resolving path failed (%ld)\n", (ssize)ino);
+        return ino;
     }
 
     vinode_t inod;
@@ -1143,7 +1143,7 @@ int rmdir(const char* path) {
     vfs_t* mnt = vfs_getmnt(abs);
 
     ssize ino = 0;
-    if ((ret = vfs_resolve(mnt, abs, VFS_FOLLOW_FINAL | VFS_MUST_BE_DIR)) < 0) return ret;
+    if ((ino = vfs_resolve(mnt, abs, VFS_FOLLOW_FINAL | VFS_MUST_BE_DIR)) < 0) return ino;
 
     vinode_t inod;
     u64 pos = 0;

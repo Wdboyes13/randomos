@@ -35,8 +35,16 @@ DEFSYSCALL(sys_creat) {
 }
 
 DEFSYSCALL(sys_unlink) {
-    if (!ensure_string((char*)args->a0, 256, 0)) return -EINVAL;
-    return unlink((char*)args->a0);
+    kprint("sys_unlink: entered\n");
+    if (!ensure_string((char*)args->a0, 256, 0)) {
+        kprint("sys_unlink: rejected invalid path pointer/string\n");
+        return -EINVAL;
+    }
+
+    kprint("sys_unlink: calling VFS unlink for %s\n", (char*)args->a0);
+    int ret = unlink((char*)args->a0);
+    kprint("sys_unlink: returned %d\n", ret);
+    return ret;
 }
 
 DEFSYSCALL(sys_lseek) {

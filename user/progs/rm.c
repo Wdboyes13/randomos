@@ -8,7 +8,10 @@ int main(int ac, char** av) {
     }
 
     struct stat st;
-    if (stat(av[1], &st) < 0) return 1;
+    if (stat(av[1], &st) < 0) {
+        printf("failed to stat target\n");
+        return 1;
+    }
 
     if (S_TYPE(st.st_mode) == S_IFDIR) {
         if (rmdir(av[1]) < 0) {
